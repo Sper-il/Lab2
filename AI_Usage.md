@@ -54,6 +54,9 @@
 | `tests/unit/test_dataset.py` | 9 test về dataset, chỉ số âm, class balance, không mutate parent | "Viết test cho M1" |
 | `tests/integration/test_dataloader_pipeline.py` | 8 test end-to-end DataLoader + config parse | "Viết test cho M1" |
 | `scripts/plot_data_report.py` | Sinh biểu đồ phân bố lớp + lưới ảnh mẫu vào `results/runs/<ts>/plots/` | "Xuất kết quả vào folder results" |
+| `src/data/prepare.py` | Xuất `data/processed/` (.npy + metadata) và `data/splits/` (.npz + .json), verify split bằng hash nội dung ảnh | "Sao folder processed với splits trống vậy bạn xem lại giúp tôi" |
+| `tests/unit/test_prepare.py` | 11 test: file .npy khớp raw, split reproducible, split export khớp pipeline, phân tầng giữ nguyên | "Sao folder processed với splits trống vậy bạn xem lại giúp tôi" |
+| `scripts/benchmark_loading.py` | Đo throughput data loading để quyết định có cache ảnh 224×224 | "Sao folder processed với splits trống vậy bạn xem lại giúp tôi" |
 
 ## 5. Prompt Purpose (cho mỗi artifact)
 
@@ -69,6 +72,9 @@
 - **`src/data/__main__.py`** — bản đầu của AI viết log không dấu (`mau`, `that bai`) để né lỗi encoding trên. Sau khi sửa lỗi encoding ở trên, đã đổi lại toàn bộ log sang tiếng Việt có dấu.
 - **`scripts/plot_data_report.py`** — bản đầu import `src.data...` không có `sys.path` bootstrap → `ModuleNotFoundError: No module named 'src'` khi chạy trực tiếp file. Đã thêm `sys.path.insert(0, parent.parent)`.
 - **`requirements.txt`** — thêm `matplotlib==3.11.2` (chưa có sẵn) vì M1 cần vẽ biểu đồ kiểm chứng. Version được xác minh qua `pip index versions matplotlib`.
+- **`src/data/prepare.py` — `verify_splits`** — bản đầu của AI so sánh overlap bằng cách lấy giao `set(train_idx) ∩ set(test_idx)`, cho ra `AssertionError: train/test overlap` **giả**. Nguyên nhân: `train_idx` trỏ vào tập train (0..49.999) còn `test_idx` trỏ vào tập test (0..9.999) — hai không gian chỉ số khác nhau, nên so sánh trực tiếp là vô nghĩa. Đã sửa bằng cách hash **nội dung ảnh** (`image.tobytes()`) của từng mẫu rồi so sánh tập hash giữa các split — vừa đúng ý nghĩa vừa phát hiện được cả rò rỉ ảnh lẫn chỉ số sai.
+- **`src/data/prepare.py` — `export_processed`** — bản đầu của AI resize ảnh lên 224×224 trước khi lưu. Đã sửa thành giữ ảnh gốc 32×32, vì `RandomCrop(32, padding=4)` cần thao tác trên ảnh gốc và augmentation phải khác nhau mỗi epoch. Benchmark cho thấy workers=4 đạt 403 ảnh/s (~1.9 phút/epoch) nên cache 7 GB không đáng.
+- **`README.md` / `data/README.md`** — bản đầu ghi `processed/` và `splits/` là "(giai đoạn sau)" tức thư mục rỗng. Đã sửa mô tả thành nội dung thật sau khi implement `src/data/prepare.py`.
 - *(Sẽ bổ sung sau mỗi module: chỗ sửa logic, đổi optimizer, đổi hyperparameter vì kết quả thực tế khác kỳ vọng.)*
 
 ## 7. Validation Method
@@ -93,3 +99,7 @@
 | Determinism val | Thứ tự batch val giống nhau qua 2 lần chạy |
 | Shuffle train | Thứ tự batch train khác nhau qua 2 epoch |
 | Biểu đồ | `plots/class_distribution.png`, `plots/sample_images.png` |
+| `data/processed/` | train/test images + labels dạng `.npy`, metadata.json — shape `[50000,32,32,3]` uint8 |
+| `data/splits/` | `cifar10_split_seed42.npz` + `.json` — 45.000 / 5.000 / 10.000 |
+| Split export khớp pipeline | Test so `train_idx`/`val_idx` trong `.npz` với output của `stratified_indices` → khớp 100% |
+| Split không trùng ảnh | Hash nội dung ảnh: overlap train/val = 0, train/test = 0, val/test = 0 |

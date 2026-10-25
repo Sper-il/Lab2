@@ -97,10 +97,10 @@ Chi tiết từng interface: xem `docs/architecture.md` (sẽ bổ sung ở modu
 
 ```
 lab2/
-├── data/                  # dữ liệu CIFAR-10 tải tự động (gitignore)
-│   ├── raw/               # file gốc torchvision tải về
-│   ├── processed/         # (giai đoạn sau) dữ liệu đã xử lý
-│   └── splits/            # (giai đoạn sau) file split train/val
+├── data/                  # dữ liệu CIFAR-10 (gitignore, trừ data/README.md)
+│   ├── raw/               # file gốc torchvision tải về + giải nén
+│   ├── processed/         # ảnh + nhãn dạng .npy + metadata.json
+│   └── splits/            # chỉ số train/val/test (.npz + .json)
 │
 ├── src/
 │   ├── data/              # dataset, transforms, split, dataloader  ✅ M1
@@ -195,12 +195,32 @@ Kết quả mong đợi: `2.14.1+cpu 0.29.1+cpu False`.
 ### 6.4 Chuẩn bị data
 
 ```powershell
-# Tải CIFAR-10 về data/raw/ (tự động giải nén) + kiểm tra tính toàn vẹn
+# Bước 1 — Tải CIFAR-10 về data/raw/ (tự động giải nén) + kiểm tra tính toàn vẹn
 .\.venv\Scripts\python.exe scripts\download_data.py
 .\.venv\Scripts\python.exe scripts\verify_data.py
+
+# Bước 2 — Xuất data/processed/ (ảnh .npy) và data/splits/ (chỉ số split)
+.\.venv\Scripts\python.exe -m src.data.prepare
 ```
 
 Tải thủ công: [cifar-10-python.tar.gz](https://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz) → giải nén vào `data/raw/`. Chi tiết ở `data/README.md`.
+
+**Kết quả bước 2:**
+
+```text
+data/processed/
+├── train_images.npy       146.5 MB   uint8 [50000, 32, 32, 3]
+├── train_labels.npy       390.8 KB   int64 [50000]
+├── test_images.npy         29.3 MB   uint8 [10000, 32, 32, 3]
+├── test_labels.npy         78.2 KB   int64 [10000]
+└── metadata.json                     tên lớp + thống kê
+
+data/splits/
+├── cifar10_split_seed42.npz           train_idx / val_idx / test_idx
+└── cifar10_split_seed42.json          bản tóm tắt đọc được
+```
+
+Verify tự động: `train + val = 50.000`, `test = 10.000`, và **không có ảnh nào trùng giữa các split** (so sánh hash nội dung ảnh, không chỉ so chỉ số).
 
 ### 6.5 Chạy data pipeline (M1)
 

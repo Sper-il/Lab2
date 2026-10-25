@@ -64,8 +64,12 @@
   - [x] Tests — 36 test unit + integration (`pytest -q` → 36 passed)
   - [x] Run — `python -m src.data` → `results/runs/20261025-150847/`
   - [x] Biểu đồ — `scripts/plot_data_report.py` → `plots/class_distribution.png`, `plots/sample_images.png`
-- **Status** — Describe ✅ / Generate ✅ / Review ✅ / Run ✅ / Test ✅ / Refactor ✅ / Commit ⏳
+  - [x] `src/data/prepare.py` — xuất `data/processed/` (`.npy`) + `data/splits/` (`.npz`/`.json`), verify bằng hash nội dung ảnh
+  - [x] `scripts/benchmark_loading.py` — đo throughput để quyết định có cache ảnh 224×224 (kết luận: không, tốn 7 GB mà không cải thiện đáng kể)
+  - [x] Tests bổ sung — `tests/unit/test_prepare.py` → 11 passed
+- **Status** — Describe ✅ / Generate ✅ / Review ✅ / Run ✅ / Test ✅ / Refactor ✅ / Commit ✅
 - **Last run** — `results/runs/20261025-150847/` (metrics.json: validation status PASS)
+- **Commit** — `f130862` (M0 scaffold), `d0321eb` (M1 data pipeline)
 - **DoD checklist** — xem `checklists/dod.md` (workspace skill)
 
 ## Module Log
@@ -74,7 +78,7 @@
 |---|--------|------|--------|--------|---------|
 | 0 | M0 — Environment & Scaffold | 2026-10-25 | ✅ | — | Python 3.13.2, torch 2.14.1+cpu, torchvision 0.29.1+cpu, tensorboard 2.21.0; CPU-only |
 | 0b | M0b — Dataset CIFAR-10 | 2026-10-25 | ✅ | — | Tải + giải nén + verify: 50k train / 10k test, 10 lớp cân bằng, ảnh 32×32 |
-| 1 | M1 — Data pipeline (dataset/transforms/split) | 2026-10-25 | ✅ | — | 45k/5k/10k stratified seed=42; ảnh [B,3,224,224] float32; 36 test pass; run `20261025-150847` |
+| 1 | M1 — Data pipeline (dataset/transforms/split) | 2026-10-25 | ✅ | `d0321eb` | 45k/5k/10k stratified seed=42; ảnh [B,3,224,224] float32; 36+11 test pass; run `20261025-150847` |
 | 2 | M2 — Model factory (backbone/head/freeze) | 2026-10-25 | ⏳ | — | |
 | 3 | M3 — Training loop + TensorBoard | 2026-10-25 | ⏳ | — | |
 | 4 | M4 — Evaluation & metrics | 2026-10-25 | ⏳ | — | |
@@ -98,6 +102,10 @@
 | 2026-10-25 | Augmentation trên ảnh 32×32 **trước**, resize 224 **sau** | Resize 224 trước rồi crop | Crop trên ảnh gốc 32×32 giữ được nội dung chi tiết; crop trên ảnh up-sample 224 chỉ crop vùng upscale |
 | 2026-10-25 | Ép stdout/stderr về UTF-8 trong `setup_logging` | Bỏ tiếng Việt có dấu trong log | Console Windows dùng cp1252, log tiếng Việt gây `UnicodeEncodeError` làm sập tiến trình |
 | 2026-10-25 | `num_workers` bị giới hạn theo `os.cpu_count() - 1` | Cứ để 4 như config | Tránh spawn quá nhiều process trên máy CPU yếu; 0 worker nếu máy chỉ có ≤2 core |
+| 2026-10-25 | Xuất `data/processed/` (`.npy`) và `data/splits/` (`.npz`+`.json`) | Để hai thư mục rỗng như scaffold ban đầu | Convention `data/{raw,processed,splits}` của skill `ai-fusion-workflow` yêu cầu chúng có nội dung thật; `processed/` = dữ liệu đã xử lý sạch, `splits/` = file split |
+| 2026-10-25 | `processed/` giữ ảnh gốc 32×32, **không** resize 224 | Cache ảnh 224×224 uint8 (7.0 GB) | Resize phải ở transform lúc train: `RandomCrop` cần thao tác trên ảnh gốc 32×32, và augmentation phải khác nhau mỗi epoch. Benchmark: workers=4 → 403 ảnh/s (~1.9 phút/epoch) → data loading không phải nút thắt, không cần cache 7 GB |
+| 2026-10-25 | Verify split bằng **hash nội dung ảnh**, không so chỉ số | So sánh trực tiếp `set(train_idx) ∩ set(test_idx)` | `train_idx` (0..49.999) và `test_idx` (0..9.999) thuộc hai không gian chỉ số khác nhau → so chánh overlap trực tiếp là vô nghĩa và tạo cảnh báo sai. So hash nội dung ảnh mới thật sự phát hiện rò rỉ |
+| 2026-10-25 | `data/splits/` lưu cả `.npz` (dùng trong code) và `.json` (đọc/diff được) | Chỉ `.npz` | `.npz` nạp nhanh bằng `np.load`; `.json` giúp con người kiểm tra và git diff |
 
 ## Risks & Mitigations
 
@@ -121,9 +129,9 @@
 
 - [x] Đúng yêu cầu
 - [x] Code chạy end-to-end
-- [x] Tests pass (36/36 — `pytest -q`)
+- [x] Tests pass (47/47 — 36 data pipeline + 11 prepare)
 - [x] Không có secrets / không có artifact lớn
 - [x] Code đã self-review
 - [x] Có thể giải thích được
 - [x] Docs đã cập nhật
-- [ ] Đã committed (Conventional Commit) — chưa khởi tạo git repo
+- [x] Đã committed (Conventional Commit) — `f130862` (M0), `d0321eb` (M1)

@@ -13,6 +13,22 @@ data/raw/cifar-10-batches-py/
         │  data_batch_1..5 (50.000 ảnh) + test_batch (10.000 ảnh)
         ▼
 ┌─────────────────────────────────────────────────────────┐
+│  BƯỚC 0 (offline, 1 lần): python -m src.data.prepare   │
+│                                                         │
+│  data/processed/                                       │
+│    train_images.npy  uint8 [50000, 32, 32, 3]          │
+│    train_labels.npy  int64 [50000]                     │
+│    test_images.npy   uint8 [10000, 32, 32, 3]          │
+│    test_labels.npy   int64 [10000]                     │
+│    metadata.json     tên lớp + thống kê                │
+│                                                         │
+│  data/splits/                                          │
+│    cifar10_split_seed42.npz  train_idx/val_idx/test_idx│
+│    cifar10_split_seed42.json  bản tóm tắt              │
+└─────────────────────────────────────────────────────────┘
+        │
+        ▼
+┌─────────────────────────────────────────────────────────┐
 │  Cifar10Dataset(root="data/raw", train=True)            │
 │  • base.data  → numpy uint8 [N, 32, 32, 3]  (~147 MB) │
 │  • base.targets → numpy int64 [N]                      │
@@ -42,6 +58,63 @@ data/raw/cifar-10-batches-py/
         ▼
    images [B, 3, 224, 224] float32   labels [B] int64
 ```
+
+## 1b. Bước 0 — `src/data/prepare.py` (chạy 1 lần, offline)
+
+Convention `data/{raw, processed, splits}` của skill `ai-fusion-workflow` yêu cầu
+cả ba thư mục có nội dung thật. Module này sinh ra hai thư mục còn lại:
+
+```powershell
+.\.venv\Scripts\python.exe -m src.data.prepare
+```
+
+| Output | Nội dung | Kích thước |
+|--------|----------|------------|
+| `data/processed/train_images.npy` | uint8 `[50000, 32, 32, 3]` | 146.5 MB |
+| `data/processed/train_labels.npy` | int64 `[50000]` | 390.8 KB |
+| `data/processed/test_images.npy` | uint8 `[10000, 32, 32, 3]` | 29.3 MB |
+| `data/processed/test_labels.npy` | int64 `[10000]` | 78.2 KB |
+| `data/processed/metadata.json` | tên lớp, thống kê, nguồn gốc | 1 KB |
+| `data/splits/cifar10_split_seed42.npz` | `train_idx` / `val_idx` / `test_idx` | 89.8 KB |
+| `data/splits/cifar10_split_seed42.json` | bản tóm tắt đọc được | 0.4 KB |
+
+### Vì sao `processed/` giữ ảnh 32×32, không resize 224?
+
+Resize phải diễn ra **trong transform lúc train**, không lúc prepare:
+
+- `RandomCrop(32, padding=4)` cần thao tác trên ảnh gốc 32×32. Resize trước rồi
+  mới crop chỉ crop trên ảnh đã up-sample — không thu được thông tin nào.
+- Augmentation phải khác nhau **mỗi epoch** để chống overfitting. Ảnh resize
+  vĩnh viễn trên disk làm mất tính chất này.
+
+### Benchmark quyết định có cache ảnh 224×224 không
+
+`scripts/benchmark_loading.py` đo trên máy này (CPU-only):
+
+| `num_workers` | Throughput | 1 epoch (45k ảnh) |
+|----------------|------------|-------------------|
+| 0 | 149.6 ảnh/s | ~5.0 phút |
+| 4 | 403.5 ảnh/s | ~1.9 phút |
+
+Cache 224×224 uint8 cho 50k ảnh tốn **7.0 GB**. Với throughput đã đạt 403 ảnh/s
+(data loading không phải nút thắt), cache 7 GB **không đáng** → giữ ảnh 32×32.
+
+### Verify split bằng hash nội dung ảnh
+
+`train_idx` (0..49.999) và `test_idx` (0..9.999) thuộc **hai không gian chỉ số
+khác nhau** → không thể so sánh overlap trực tiếp. `verify_splits` thay vào đó
+hash **nội dung ảnh** (`image.tobytes()`) rồi so sánh tập hash:
+
+| Phép so sánh | Kết quả |
+|--------------|---------|
+| `train_idx ∩ val_idx` (cùng không gian) | 0 |
+| hash(train) ∩ hash(val) | 0 |
+| hash(train) ∩ hash(test) | 0 |
+| hash(val) ∩ hash(test) | 0 |
+
+Test `test_exported_split_matches_pipeline_split` xác nhận file `.npz` trong
+`data/splits/` **khớp 100%** với output của `stratified_indices` mà pipeline
+thực sự dùng.
 
 ## 2. Transform chi tiết
 
