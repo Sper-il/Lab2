@@ -60,6 +60,7 @@
 | `README.md` (v2) — mục "2b. Đối chiếu với đề bài" | Bảng ánh xạ 14 yêu cầu trong `đề.txt` (E1–E3, O1–O11) → file/module/trạng thái | "Đảm bảo các docs luôn bám sát đề" |
 | `progress_status.md` (v2) | Thêm bảng đối chiếu đề bài, sửa shape `[B,3,32,32]` → `[B,3,224,224]`, cập nhật commit + số test | "Đảm bảo các docs luôn bám sát đề" |
 | `docs/plan-m2-m4.md` | Plan chi tiết M2/M3/M4 — file cần tạo, chức năng từng hàm, test, tiêu chí, ước lượng thời gian train đã đo thật | "Cho tôi plan chia việc phần m2 m3 m4, làm file gì làm ở đâu file đó có chức năng gì" |
+| `docs/PHASE2_PLAN.md` | Viết lại plan theo format `PHASE2_PLAN.md` (mẫu FashionMNIST) — chia 3 người, code mẫu cho từng file, report template | "chia theo format" |
 
 ## 5. Prompt Purpose (cho mỗi artifact)
 
@@ -85,6 +86,8 @@
 - **`scripts/verify_data.py`** — bản đầu của AI chỉ kiểm tra số mẫu / phân bố lớp / shape, **không** kiểm tra tính toàn vẹn file tải về, dù docs và `download_data.py` đều nói "có kiểm tra MD5 tích hợp". Đã bổ sung `_verify_archive()` — hash MD5 theo chunk (không nạp hết 163 MB vào RAM), so với giá trị chuẩn `c58f30108f718f92721af3b95e74349a`, exit code 1 + hướng dẫn tải lại nếu sai. Đã chạy thật: PASS.
 - **`docs/plan-m2-m4.md`** — bản đầu của AI ước lượng thời gian train bằng cảm tính ("10–20 phút/epoch"). Đã **đo thật** trên máy này (ResNet18, batch 32, 8 threads): freeze 224×224 = **36.6 min/epoch**, 64×64 = **4.8 min/epoch**; VGG11 224 = **144 min/epoch** (12 giờ cho 5 epoch → không khả thi). Nhờ đó mới phát hiện ra mâu thuẫn giữa README ("≤ 15 phút/epoch") và thực tế, dẫn tới quyết định 2 tầng 224/64.
 - **`docs/plan-m2-m4.md` — cấu trúc head** — bản đầu của AI giả định mọi model có `model.fc`. Đã introspect thật: `resnet18.fc` = `Linear`, `densenet121.classifier` = `Linear`, nhưng **`vgg11.classifier` = `Sequential` 7 phần tử** (3 tầng Linear + ReLU + Dropout xen kẽ) → code thay head phải xử lý 2 dạng khác nhau, nếu không sẽ crash ngay khi chạy VGG11.
+- **`docs/PHASE2_PLAN.md` — bản đầu của AI viết `freeze_backbone()` unfreeze toàn bộ `classifier`** mà không kiểm tra số params. Đã chạy code thật để đo: `classifier` của VGG11 chứa **103M params** → unfreeze cả sẽ khiến **92.8% model trainable**, mất hoàn toàn ý nghĩa của "freeze backbone". Đã sửa thành `freeze_head_full: false` (chỉ `Linear(4096,10)` = 40,970 params = 0.032%) và thêm test bắt lỗi này.
+- **`docs/PHASE2_PLAN.md` — `unfreeze_last` dùng `feature_attr=""` cho resnet18** → sẽ lấy `children[-1:]` của model = `fc` chứ không phải `layer4`, tức fine-tune sẽ không mở block nào. Đã thay bằng `block_units` khai báo tập trung trong `registry.py` và **verify bằng chạy thật**: resnet18 `ft1` = 75.1% params trainable (đúng ~`layer4`), vgg11 `ft1` = 94.7%, densenet121 `ft1` = 31.1%.
 - *(Sẽ bổ sung sau mỗi module: chỗ sửa logic, đổi optimizer, đổi hyperparameter vì kết quả thực tế khác kỳ vọng.)*
 
 ## 7. Validation Method

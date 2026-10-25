@@ -103,12 +103,13 @@ Bước 1 (Environment Setup) — ✅ xong: `requirements.txt` pin torch 2.14.1 
 | 0b | M0b — Dataset CIFAR-10 | 2026-10-25 | ✅ | — | Tải + giải nén + verify: 50k train / 10k test, 10 lớp cân bằng, ảnh 32×32 |
 | 1 | M1 — Data pipeline (dataset/transforms/split) | 2026-10-25 | ✅ | `d0321eb` + `28aa1ff` | 45k/5k/10k stratified seed=42; ảnh [B,3,224,224] float32; 47 test pass; run `20261025-150847` |
 | 1b | M1b — Docs align với `đề.txt` | 2026-10-25 | ✅ | `a1a6b71` | Ma trận truy vết 14 yêu cầu đề; sửa shape, số liệu bịa, path không tồn tại; thêm MD5 check cho `verify_data.py` |
-| 2 | M2 — Model factory (backbone/head/freeze) | 2026-10-25 | ⏳ | — | Plan: `docs/plan-m2-m4.md` §1 — phủ E1, O1–O5 |
-| 3 | M3 — Training loop + TensorBoard | 2026-10-25 | ⏳ | — | Plan: `docs/plan-m2-m4.md` §2 — phủ E2, E3, O9, O10 |
-| 4 | M4 — Evaluation & metrics | 2026-10-25 | ⏳ | — | Plan: `docs/plan-m2-m4.md` §3 — phủ O11 |
+| 2 | M2 — Model factory (backbone/head/freeze) | 2026-10-25 | ⏳ | — | Plan: `docs/PHASE2_PLAN.md` §Người 1 — phủ E1, O1–O5 |
+| 3 | M3 — Training loop + TensorBoard | 2026-10-25 | ⏳ | — | Plan: `docs/PHASE2_PLAN.md` §Người 2 — phủ E2, E3, O9, O10 |
+| 4 | M4 — Evaluation & metrics | 2026-10-25 | ⏳ | — | Plan: `docs/PHASE2_PLAN.md` §Người 3 — phủ O11 |
 | 5 | M5 — Experiment sweep + báo cáo | 2026-10-25 | ⏳ | — | Chạy train + tổng hợp bảng so sánh |
 
-> **Kế hoạch chi tiết M2–M4:** `docs/plan-m2-m4.md` — danh sách file, chức năng từng hàm, test, tiêu chí hoàn thành, và ước lượng thời gian train **đã đo thật** trên máy này.
+> **Kế hoạch chi tiết M2–M4:** `docs/PHASE2_PLAN.md` — chia cho 3 người, danh sách file, chức năng từng hàm, code mẫu đã kiểm chứng, test, tiêu chí hoàn thành, và ước lượng thời gian train **đã đo thật** trên máy này.
+> Bản tóm tắt ban đầu: `docs/plan-m2-m4.md`.
 
 ## Decisions Log
 
@@ -142,6 +143,9 @@ Bước 1 (Environment Setup) — ✅ xong: `requirements.txt` pin torch 2.14.1 
 | 2026-10-25 | `unfreeze_last` dùng **số block** (`freeze_until: 1`) thay vì tên layer cụ thể | Hardcode tên layer cho từng model | 3 model có cấu trúc khác nhau (`layer4` vs `features[-3:]` vs `denseblock4`) — dùng số block khiến code chung, chỉ khác cách xác định "block cuối" |
 | 2026-10-25 | Tự tính macro-F1 bằng `torch` thuần, **không** thêm `scikit-learn` | Dùng `sklearn.metrics` | Thêm dependency chỉ để tính F1 là không đáng; giữ `requirements.txt` gọn và tránh rủi ro cài đặt |
 | 2026-10-25 | `build_optimizer` chỉ truyền params có `requires_grad=True` | Truyền toàn bộ `model.parameters()` | Tránh optimizer theo dõi trọng số đã freeze; phản ánh đúng "params đang train" khi báo cáo |
+| 2026-10-25 | Với VGG11, `freeze_backbone` chỉ unfreeze **lớp Linear cuối** (`freeze_head_full: false`) | Unfreeze toàn bộ `classifier` | **Đã đo thật**: `classifier` của VGG11 chứa 103M params. Unfreeze cả sẽ khiến **92.8% model trainable** → mất ý nghĩa transfer learning và epoch chậm gần như full fine-tune. Chỉ Linear cuối = 40,970 params (0.032%) |
+| 2026-10-25 | Dùng `block_units` (đường dẫn module đã introspect) để unfreeze n block cuối | Hardcode tên layer cho từng model | `resnet18` có 4 stage (`layer1..4`), `vgg11` có 8 conv block (chỉ số `0,3,6,8,11,13,16,18`), `densenet121` có 4 denseblock — khai báo tập trung trong `registry.py`, code unfreeze dùng chung cho cả 3 |
+| 2026-10-25 | `unfreeze_last` mở luôn BatchNorm trong block được unfreeze | Chỉ mở Conv/Linear | BN đóng băng sẽ chỉ dùng running stats → không thích ứng được với phân bố CIFAR-10, làm giảm hiệu quả fine-tune |
 
 ## Risks & Mitigations
 

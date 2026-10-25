@@ -141,6 +141,35 @@ model:
   dropout: 0.0
 ```
 
+- [ ] `build_model` chạy được cho cả 3 model
+- [ ] Head thay đúng, output shape `(B, 10)`
+- [ ] Freeze → chỉ head trainable, đếm params khớp
+- [ ] Fine-tune → mở đúng block cuối, params nhiều hơn freeze
+- [ ] CLI in cấu trúc model (O2 thỏa mãn)
+- [ ] ≥ 20 test pass
+- [ ] Docs cập nhật, commit
+
+---
+
+## 2. M3 — Training loop + TensorBoard
+
+### 2.1 Yêu cầu đề bài được phủ
+
+| # | Yêu cầu trong `đề.txt` | Câu chữ gốc |
+|---|------------------------|-------------|
+| E2 | Adjust the hyperparameters | "Adjust the hyperparameters (learning rate, batch size, etc.)" |
+| E3 | Use TensorBoard | "Use TensorBoard to monitor the training process" |
+| O9 | Define the loss function and optimizer | "Define the loss function and optimizer" |
+| O10 | Write the training loop | "Write the training loop to train the model on your dataset" |
+
+### 2.2 Files cần tạo
+
+#### `src/training/trainer.py` — file chính (~320 dòng)
+
+| Hàm / class | Chức năng |
+|-------------|-----------|
+| `TrainConfig` (dataclass) | `model`, `epochs`, `batch_size`, `lr`, `optimiz
+
 ### 1.4 Tests cho M2
 
 #### `tests/unit/test_factory.py` (~14 test)
@@ -173,36 +202,7 @@ model:
 | `test_checkpoint_save_load` | Save → load → cùng output |
 | `test_describe_model_contains_key_info` | Chuỗi mô tả chứa tên lớp + số params |
 
-### 1.5 Tiêu chí hoàn thành M2
-
-- [ ] `build_model` chạy được cho cả 3 model
-- [ ] Head thay đúng, output shape `(B, 10)`
-- [ ] Freeze → chỉ head trainable, đếm params khớp
-- [ ] Fine-tune → mở đúng block cuối, params nhiều hơn freeze
-- [ ] CLI in cấu trúc model (O2 thỏa mãn)
-- [ ] ≥ 20 test pass
-- [ ] Docs cập nhật, commit
-
----
-
-## 2. M3 — Training loop + TensorBoard
-
-### 2.1 Yêu cầu đề bài được phủ
-
-| # | Yêu cầu trong `đề.txt` | Câu chữ gốc |
-|---|------------------------|-------------|
-| E2 | Adjust the hyperparameters | "Adjust the hyperparameters (learning rate, batch size, etc.)" |
-| E3 | Use TensorBoard | "Use TensorBoard to monitor the training process" |
-| O9 | Define the loss function and optimizer | "Define the loss function and optimizer" |
-| O10 | Write the training loop | "Write the training loop to train the model on your dataset" |
-
-### 2.2 Files cần tạo
-
-#### `src/training/trainer.py` — file chính (~320 dòng)
-
-| Hàm / class | Chức năng |
-|-------------|-----------|
-| `TrainConfig` (dataclass) | `model`, `epochs`, `batch_size`, `lr`, `optimizer`, `weight_decay`, `momentum`, `scheduler`, `num_workers`, `seed`, `device`, `strategy`, `freeze_until` |
+### 1.5 Tiêu chí hoàn thành M2er`, `weight_decay`, `momentum`, `scheduler`, `num_workers`, `seed`, `device`, `strategy`, `freeze_until` |
 | `Trainer` (class) | Chứa toàn bộ vòng lặp train/val |
 | `Trainer.train()` | Vòng lặp chính qua các epoch |
 | `Trainer.train_one_epoch()` | 1 epoch: `zero_grad → forward → loss → backward → step` (O10) |

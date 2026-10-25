@@ -39,7 +39,7 @@ Công cụ: PyTorch 2.x + torchvision + TensorBoard.
 
 > Nguồn: `đề.txt`. Bảng này là hợp đồng giữa đề bài và hiện thực — dùng để kiểm tra "đã làm đúng chưa" ở mỗi milestone.
 >
-> **Kế hoạch triển khai M2–M4** (file nào, hàm nào, test nào, ước lượng thời gian): [`docs/plan-m2-m4.md`](docs/plan-m2-m4.md)
+> **Kế hoạch triển khai M2–M4** (chia 3 người, file nào, hàm nào, test nào, ước lượng thời gian): [`docs/PHASE2_PLAN.md`](docs/PHASE2_PLAN.md)
 
 | # | Yêu cầu trong `đề.txt` | Nội dung cụ thể | Hiện thực | Module | Trạng thái |
 |---|------------------------|-----------------|-----------|--------|-----------|
@@ -283,7 +283,7 @@ Artifact ghi ra: `results/runs/20261025-150847/` gồm `config.yaml`, `metrics.j
 
 > **Trạng thái:** các lệnh dưới đây là **thiết kế dự kiến**, chưa chạy được — `src/models/factory.py`, `src/training/trainer.py`, `src/evaluation/metrics.py` hiện mới chỉ là thư mục rỗng (`__init__.py`), và `configs/train_config.yaml` / `model_config.yaml` / `eval_config.yaml` chưa được tạo. Được cập nhật khi M2–M4 hoàn tất.
 >
-> **Kế hoạch chi tiết** (file nào, hàm nào, test nào, mất bao lâu): xem [`docs/plan-m2-m4.md`](docs/plan-m2-m4.md).
+> **Kế hoạch chi tiết** (chia 3 người, file nào, hàm nào, test nào, mất bao lâu): xem [`docs/PHASE2_PLAN.md`](docs/PHASE2_PLAN.md).
 
 ```powershell
 # Train 1 model (config trong configs/train_config.yaml)
