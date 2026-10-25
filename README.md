@@ -38,6 +38,8 @@ Công cụ: PyTorch 2.x + torchvision + TensorBoard.
 ## 2b. Đối chiếu với đề bài (Practice 2)
 
 > Nguồn: `đề.txt`. Bảng này là hợp đồng giữa đề bài và hiện thực — dùng để kiểm tra "đã làm đúng chưa" ở mỗi milestone.
+>
+> **Kế hoạch triển khai M2–M4** (file nào, hàm nào, test nào, ước lượng thời gian): [`docs/plan-m2-m4.md`](docs/plan-m2-m4.md)
 
 | # | Yêu cầu trong `đề.txt` | Nội dung cụ thể | Hiện thực | Module | Trạng thái |
 |---|------------------------|-----------------|-----------|--------|-----------|
@@ -162,7 +164,7 @@ lab2/
 │   └── integration/       # test end-to-end DataLoader
 │       └── test_dataloader_pipeline.py
 │
-├── docs/                  # data-flow.md (M1) — sẽ thêm architecture.md ở M2
+├── docs/                  # data-flow.md (M1), plan-m2-m4.md — sẽ thêm architecture.md ở M2
 ├── configs/               # data_config.yaml ✅ | train_config.yaml, model_config.yaml, eval_config.yaml ⏳
 ├── results/runs/<ts>/     # metrics.json, config.yaml, logs.txt, plots/
 │
@@ -280,6 +282,8 @@ Artifact ghi ra: `results/runs/20261025-150847/` gồm `config.yaml`, `metrics.j
 ### 6.6 Chạy training (⚠️ sẽ có sau khi build M2–M3)
 
 > **Trạng thái:** các lệnh dưới đây là **thiết kế dự kiến**, chưa chạy được — `src/models/factory.py`, `src/training/trainer.py`, `src/evaluation/metrics.py` hiện mới chỉ là thư mục rỗng (`__init__.py`), và `configs/train_config.yaml` / `model_config.yaml` / `eval_config.yaml` chưa được tạo. Được cập nhật khi M2–M4 hoàn tất.
+>
+> **Kế hoạch chi tiết** (file nào, hàm nào, test nào, mất bao lâu): xem [`docs/plan-m2-m4.md`](docs/plan-m2-m4.md).
 
 ```powershell
 # Train 1 model (config trong configs/train_config.yaml)
@@ -295,6 +299,17 @@ Artifact ghi ra: `results/runs/20261025-150847/` gồm `config.yaml`, `metrics.j
 .\.venv\Scripts\tensorboard.exe --logdir=runs
 # mở http://localhost:6006/
 ```
+
+> ⚠️ **Về thời gian chạy trên CPU:** đã đo thật trên máy này (12 logical cores, ResNet18, batch 32):
+>
+> | Cấu hình | 1 epoch | 5 epoch |
+> |----------|---------|---------|
+> | ResNet18 freeze, 224×224 | ~37 phút | ~3 giờ |
+> | ResNet18 freeze, 64×64 | ~5 phút | ~24 phút |
+> | VGG11 freeze, 224×224 | ~144 phút | ~12 giờ |
+> | DenseNet121 freeze, 224×224 | ~124 phút | ~10 giờ |
+>
+> Vì vậy plan chia làm 2 tầng: **Tier A (224×224)** cho kết quả báo cáo chính, **Tier B (64×64)** cho sweep rộng. Chi tiết: `docs/plan-m2-m4.md` §2.4.
 
 ### 6.7 Test
 

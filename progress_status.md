@@ -103,10 +103,12 @@ Bước 1 (Environment Setup) — ✅ xong: `requirements.txt` pin torch 2.14.1 
 | 0b | M0b — Dataset CIFAR-10 | 2026-10-25 | ✅ | — | Tải + giải nén + verify: 50k train / 10k test, 10 lớp cân bằng, ảnh 32×32 |
 | 1 | M1 — Data pipeline (dataset/transforms/split) | 2026-10-25 | ✅ | `d0321eb` + `28aa1ff` | 45k/5k/10k stratified seed=42; ảnh [B,3,224,224] float32; 47 test pass; run `20261025-150847` |
 | 1b | M1b — Docs align với `đề.txt` | 2026-10-25 | ✅ | `a1a6b71` | Ma trận truy vết 14 yêu cầu đề; sửa shape, số liệu bịa, path không tồn tại; thêm MD5 check cho `verify_data.py` |
-| 2 | M2 — Model factory (backbone/head/freeze) | 2026-10-25 | ⏳ | — | |
-| 3 | M3 — Training loop + TensorBoard | 2026-10-25 | ⏳ | — | |
-| 4 | M4 — Evaluation & metrics | 2026-10-25 | ⏳ | — | |
-| 5 | M5 — Experiment sweep + báo cáo | 2026-10-25 | ⏳ | — | |
+| 2 | M2 — Model factory (backbone/head/freeze) | 2026-10-25 | ⏳ | — | Plan: `docs/plan-m2-m4.md` §1 — phủ E1, O1–O5 |
+| 3 | M3 — Training loop + TensorBoard | 2026-10-25 | ⏳ | — | Plan: `docs/plan-m2-m4.md` §2 — phủ E2, E3, O9, O10 |
+| 4 | M4 — Evaluation & metrics | 2026-10-25 | ⏳ | — | Plan: `docs/plan-m2-m4.md` §3 — phủ O11 |
+| 5 | M5 — Experiment sweep + báo cáo | 2026-10-25 | ⏳ | — | Chạy train + tổng hợp bảng so sánh |
+
+> **Kế hoạch chi tiết M2–M4:** `docs/plan-m2-m4.md` — danh sách file, chức năng từng hàm, test, tiêu chí hoàn thành, và ước lượng thời gian train **đã đo thật** trên máy này.
 
 ## Decisions Log
 
@@ -135,6 +137,11 @@ Bước 1 (Environment Setup) — ✅ xong: `requirements.txt` pin torch 2.14.1 
 | 2026-10-25 | Đánh dấu rõ lệnh/lệnh-cfg **chưa tồn tại** trong README thay vì để trông như đã có | Bỏ hẳn mục 6.6 | `src/models`, `src/training`, `src/evaluation` mới chỉ có `__init__.py`; `configs/train_config.yaml` chưa tạo. Ghi rõ trạng thái "thiết kế dự kiến" tránh gây hiểu nhầm là đã chạy được |
 | 2026-10-25 | Bổ sung kiểm tra **MD5 archive** vào `scripts/verify_data.py` | Chỉ kiểm tra số mẫu / lớp / shape | `download_data.py` và docs đều claim "có kiểm tra MD5 tích hợp" nhưng script thực tế **không** kiểm tra → claim sai. Nay đã khớp: hash theo chunk, so với `c58f30108f718f92721af3b95e74349a`, exit 1 + hướng dẫn tải lại |
 | 2026-10-25 | Ghi rõ 4 tiêu chí đánh giá là **mục tiêu tự đặt**, không phải ngưỡng từ đề bài | Để trông như yêu cầu của đề | `đề.txt` không đặt ngưỡng accuracy nào; ghi rõ nguồn gốc tránh hiểu nhầm là yêu cầu giáo viên |
+| 2026-10-25 | Chiến lược **2 tầng kích thước ảnh** cho M3: Tier A = 224×224 (báo cáo chính), Tier B = 64×64 (sweep rộng) | Chỉ dùng 224×224 cho mọi run | **Đã đo thật** (ResNet18, batch 32, 8 threads): freeze 224 = 36.6 min/epoch, 64 = 4.8 min/epoch; VGG11 224 = 144 min/epoch (12 giờ cho 5 epoch — không khả thi trên CPU). Tier B cho phép so sánh cả 3 model + sweep siêu tham số trong thời gian chấp nhận được |
+| 2026-10-25 | Tách `src/models/registry.py` (bảng tra cứu) khỏi `src/models/factory.py` (logic) | Gộp tất cả vào 1 file | `registry.py` là dữ liệu (đổi khi thêm model), `factory.py` là logic (ổn định). Thêm `mobilenet_v3_small` sau này chỉ sửa 1 file |
+| 2026-10-25 | `unfreeze_last` dùng **số block** (`freeze_until: 1`) thay vì tên layer cụ thể | Hardcode tên layer cho từng model | 3 model có cấu trúc khác nhau (`layer4` vs `features[-3:]` vs `denseblock4`) — dùng số block khiến code chung, chỉ khác cách xác định "block cuối" |
+| 2026-10-25 | Tự tính macro-F1 bằng `torch` thuần, **không** thêm `scikit-learn` | Dùng `sklearn.metrics` | Thêm dependency chỉ để tính F1 là không đáng; giữ `requirements.txt` gọn và tránh rủi ro cài đặt |
+| 2026-10-25 | `build_optimizer` chỉ truyền params có `requires_grad=True` | Truyền toàn bộ `model.parameters()` | Tránh optimizer theo dõi trọng số đã freeze; phản ánh đúng "params đang train" khi báo cáo |
 
 ## Risks & Mitigations
 
