@@ -1,0 +1,23 @@
+# Core deep learning
+# Trên Windows, wheel PyPI chính thức của PyTorch là bản CPU (không kèm CUDA).
+# Máy này không có GPU NVIDIA nên bản CPU là đủ dùng.
+# Nếu chạy trên máy có GPU NVIDIA, cài riêng bản CUDA, ví dụ:
+#   pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
+torch==2.14.1
+torchvision==0.29.1
+
+# Training monitoring (Chapter 3 - slide 13-15)
+tensorboard==2.21.0
+
+# Data pipeline
+numpy==2.5.4
+pillow==13.0.0
+
+# Config
+PyYAML==6.0.3
+
+# Visualization (báo cáo M1, biểu đồ loss/accuracy cho M3-M5)
+matplotlib==3.11.2
+
+# Testing
+pytest==9.1.1

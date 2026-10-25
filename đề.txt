@@ -1,0 +1,41 @@
+Practice 2 - Hands-on practice with pre-trained neural network architectures
+Exercises:
+1) Experiment with different pre-trained models 
+(VGG, DenseNet, etc.).
+2) Adjust the hyperparameters (learning rate, batch 
+size, etc.).
+3) Use TensorBoard to monitor the training process.
+Objective:
+● Become familiar with loading and using pre-trained 
+models from torchvision.models.
+● Understand how to adapt and fine-tune pre-trained 
+models for specific tasks.
+Steps:
+1. Environment Setup:
+● Ensure you have PyTorch and torchvision installed.
+● If not, install them using: pip install torch torchvision
+2. Load a Pre-trained Model:
+● torchvision.models provides various pre-trained 
+models like ResNet, VGG, DenseNet, etc.
+● pretrained=True loads weights pre-trained on the 
+ImageNet dataset.
+3. Explore the Model Architecture:
+● Print the model to examine its structure.
+● Identify the layers and parameters of the model.
+4. Adapt the Model for a Specific Task:
+● Typically, the final layer of a pre-trained model (the 
+classification layer) needs to be replaced to match the number 
+of classes in your dataset.
+● You can freeze earlier layers to prevent them from updating 
+weights during retraining (transfer learning).
+● Or you can unfreeze a few of the final layers to fine-tune the 
+model.
+5. Prepare the Data:
+● Load and prepare your dataset.
+● Use torchvision.transforms to preprocess the data.
+● Use torch.utils.data.DataLoader to create data batches.
+6. Train the Model:
+● Define the loss function and optimizer.
+● Write the training loop to train the model on your dataset.
+7. Evaluate the Model: Evaluate the model's performance on a test 
+dataset.

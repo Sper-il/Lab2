@@ -1,0 +1,49 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.Python
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+.cursor/
+
+# Data
+data/raw/
+data/processed/
+data/splits/
+# (giữ lại data/README.md — tài liệu, không phải dataset)
+!data/README.md
+
+# Models
+models/checkpoints/
+models/trained/
+*.pt
+*.pth
+*.onnx
+*.h5
+
+# TensorBoard / results
+# CHỈ ignore thư mục `runs/` ở gốc project (TensorBoard logdir).
+# Dùng dấu / đầu + / cuối để KHÔNG khớp `results/runs/`.
+/runs/
+
+# Checkpoint nặng trong results (bỏ qua) — nhưng giữ lại metrics/config/plots
+results/runs/*/checkpoints/
+results/runs/*/*.pt
+results/runs/*/*.pth
+
+# Logs
+*.log
+logs/
+.pytest_cache/
+
+# Secrets
+.env
+*.key
+secrets.yaml

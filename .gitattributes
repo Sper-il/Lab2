@@ -1,0 +1,17 @@
+# Đảm bảo file text (kể cả tiếng Việt UTF-8) được xử lý nhất quán giữa Windows và Linux
+* text=auto eol=lf
+
+*.py    text diff=python
+*.md    text
+*.yaml  text
+*.yml   text
+*.txt   text
+*.json  text
+
+# File nhị phân — không xử lý line ending
+*.pdf   binary
+*.png   binary
+*.jpg   binary
+*.pt    binary
+*.pth   binary
+*.onnx  binary

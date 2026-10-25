@@ -1,0 +1,129 @@
+# Practice 2 — Hands-on with Pre-trained Neural Network Architectures
+
+> Single source of truth cho **đang làm gì, tại sao, và đã làm được gì**.
+> Cập nhật lần cuối: 2026-10-25 15:20
+
+## Project Context (Phase 1 — DEFINE)
+
+| Trường | Giá trị |
+|--------|---------|
+| Tên đầy đủ | Practice 2 — Hands-on with Pre-trained Neural Network Architectures |
+| Slug | `lab2` |
+| Bài toán | Phân loại ảnh CIFAR-10 (10 lớp) bằng model pre-trained ImageNet từ `torchvision.models`, so sánh transfer learning (freeze) và fine-tuning (unfreeze lớp cuối) |
+| Người dùng mục tiêu | Sinh viên môn AI/ML — Viện CNTT&ĐT, TSU TP.HCM |
+| Input | Ảnh RGB 32×32, batch `[B, 3, 32, 32]`, `float32`, normalize theo ImageNet mean/std |
+| Output | Logits `[B, 10]` → nhãn lớp + confidence |
+| Tính năng cốt lõi | Must: nạp model pre-trained (ResNet18/VGG11/DenseNet121), thay head, freeze/unfreeze, training loop, validation, TensorBoard, test evaluation. Should: config YAML, bảng so sánh, augmentation, metrics.json. Could: scheduler, gradient clipping, ONNX |
+| Tech construction | Python 3.13, PyTorch 2.14.1 (CPU), torchvision 0.29.1, TensorBoard 2.21.0, PyYAML, pytest |
+| Tiêu chí đánh giá | Test acc (freeze) ≥ 0.70; Test acc (fine-tune) ≥ 0.80; macro-F1 ≥ 0.70; val−train gap ≤ 0.15; 1 epoch ≤ 15 phút (CPU) |
+
+### Trả lời bộ câu hỏi bắt buộc
+
+**What?**
+- Task: image classification (10 classes).
+- Data: CIFAR-10, 50.000 train + 10.000 test ảnh 32×32 RGB, 10 lớp cân bằng (5.000 ảnh/lớp train).
+- Output: class label + softmax probability.
+- Split: 45.000 train / 5.000 val (lấy từ train, stratified, seed=42) / 10.000 test.
+
+**Why?**
+- Dataset nhỏ (50k ảnh) → train từ đầu dễ overfit; dùng backbone ImageNet làm feature extractor là cách chuẩn và đúng nội dung Chương 3 (slide 20–21).
+- CIFAR-10 là dataset được nêu trong slide 24 của tài liệu.
+- Chọn ResNet18 (nhẹ, baseline chuẩn), VGG11 (đơn giản, dễ học), DenseNet121 (skip connection, mạnh hơn) để "Experiment with different pre-trained models".
+
+**Where / When / Which?**
+- Where: local, **CPU-only** (máy không có NVIDIA GPU → `nvidia-smi` không tồn tại).
+- When: chạy offline theo batch experiment, mỗi run sinh `results/runs/<timestamp>/`.
+- Which: PyTorch (framework chính của Chương 3), torchvision (models + datasets + transforms), TensorBoard (theo slide 13–15).
+
+**How?**
+- Pipeline: `CIFAR10 → transforms → DataLoader → backbone (freeze/unfreeze) → head(10) → CrossEntropyLoss → Adam → train loop → val → TensorBoard → checkpoint → test eval`.
+- Hyperparameter mặc định: lr 1e-3 (freeze) / 1e-4 (fine-tune), batch 64, 5 epoch, Adam, weight_decay 1e-4.
+- Augmentation: RandomCrop(32, padding=4) + RandomHorizontalFlip + Normalize(ImageNet).
+- Metric: accuracy (val để chọn best), accuracy + macro-F1 + confusion matrix (test).
+
+## Architecture Snapshot (Phase 2 — DESIGN)
+
+- Pattern: transfer learning pipeline (config-driven, CLI theo module).
+- Modules: `src/data` (dataset/transforms/split), `src/models` (factory + head replacement + freeze logic), `src/training` (trainer + scheduler + checkpoint), `src/evaluation` (metrics + confusion matrix + visualize).
+- Data flow: `raw (torchvision download) → transforms → batches → model → logits → loss → weights → metrics.json`.
+- Risks: xem bảng dưới.
+
+## Active Module: M1 — Data Pipeline (dataset/transforms/split)
+
+- **Describe** — dựng pipeline data cho CIFAR-10: tải/verify dataset, chia train/val phân tầng, transform train/val, DataLoader. Input: `data/raw/cifar-10-python.tar.gz`. Output: 3 DataLoader (train 45k / val 5k / test 10k), ảnh `[B,3,224,224]` float32 đã normalize ImageNet.
+- **Goal / purpose** — nền tảng dữ liệu reproducible cho M2–M5: mọi experiment sau dùng chung split & transform, seed cố định.
+- **Pipeline** — `data/raw → Cifar10Dataset (in-memory) → stratified_indices(seed=42) → TransformSubset(train_transform|val_transform) → DataLoader → [B,3,224,224]`.
+- **How / experiment plan**
+  - [x] `src/data/transforms.py` — RandomCrop(32,pad=4)+Flip (train) / Resize+ToTensor+Normalize (val), ImageNet mean/std
+  - [x] `src/data/dataset.py` — `Cifar10Dataset` nạp ảnh vào RAM (uint8), `TransformSubset` giữ transform riêng
+  - [x] `src/data/split.py` — `stratified_indices` chia phân tầng 45k/5k, seed=42, kiểm tra overlap
+  - [x] `src/data/dataloader.py` — `DataLoaderConfig` + `build_dataloaders`, giới hạn `num_workers` theo CPU
+  - [x] `src/data/__main__.py` — CLI xuất artifact `config.yaml` + `metrics.json` + `logs.txt`
+  - [x] `configs/data_config.yaml` — toàn bộ hyperparameter data pipeline
+  - [x] `src/utils/config.py` + `src/utils/runs.py` — nạp YAML, tạo run dir, ghi JSON/artifact
+  - [x] Tests — 36 test unit + integration (`pytest -q` → 36 passed)
+  - [x] Run — `python -m src.data` → `results/runs/20261025-150847/`
+  - [x] Biểu đồ — `scripts/plot_data_report.py` → `plots/class_distribution.png`, `plots/sample_images.png`
+- **Status** — Describe ✅ / Generate ✅ / Review ✅ / Run ✅ / Test ✅ / Refactor ✅ / Commit ⏳
+- **Last run** — `results/runs/20261025-150847/` (metrics.json: validation status PASS)
+- **DoD checklist** — xem `checklists/dod.md` (workspace skill)
+
+## Module Log
+
+| # | Module | Ngày | Status | Commit | Ghi chú |
+|---|--------|------|--------|--------|---------|
+| 0 | M0 — Environment & Scaffold | 2026-10-25 | ✅ | — | Python 3.13.2, torch 2.14.1+cpu, torchvision 0.29.1+cpu, tensorboard 2.21.0; CPU-only |
+| 0b | M0b — Dataset CIFAR-10 | 2026-10-25 | ✅ | — | Tải + giải nén + verify: 50k train / 10k test, 10 lớp cân bằng, ảnh 32×32 |
+| 1 | M1 — Data pipeline (dataset/transforms/split) | 2026-10-25 | ✅ | — | 45k/5k/10k stratified seed=42; ảnh [B,3,224,224] float32; 36 test pass; run `20261025-150847` |
+| 2 | M2 — Model factory (backbone/head/freeze) | 2026-10-25 | ⏳ | — | |
+| 3 | M3 — Training loop + TensorBoard | 2026-10-25 | ⏳ | — | |
+| 4 | M4 — Evaluation & metrics | 2026-10-25 | ⏳ | — | |
+| 5 | M5 — Experiment sweep + báo cáo | 2026-10-25 | ⏳ | — | |
+
+## Decisions Log
+
+| Ngày | Quyết định | Lựa chọn khác | Lý do |
+|------|------------|---------------|-------|
+| 2026-10-25 | Dùng Python 3.13.2 | 3.11 (launcher hỏng), 3.12 (không có) | Chỉ 3.13 cài được và tương thích torch 2.14.1+cpu cp313 |
+| 2026-10-25 | Cài bản CPU của PyTorch (`+cpu`) | CUDA wheel (không có GPU) | `nvidia-smi` không tồn tại trên máy |
+| 2026-10-25 | Dataset = CIFAR-10 | MNIST, FashionMNIST, STL-10 | Đúng ví dụ slide 24; tải tự động, 10 lớp |
+| 2026-10-25 | Up-sample 32×32 → 224×224 cho backbone ImageNet | Resize 224 là bắt buộc với weight ImageNet | Backbone pre-trained kỳ vọng input 224; thay đổi kích thước phá vỡ ý nghĩa weight |
+| 2026-10-25 | Config YAML cho mọi experiment | Hardcode trong code | Reproducibility: mỗi run ghi lại `config.yaml` |
+| 2026-10-25 | 5.000 ảnh val lấy từ train | Dùng test set làm val | Giữ test set sạch cho đánh giá cuối |
+| 2026-10-25 | `requirements.txt` pin không kèm hậu tố `+cpu` | `torch==2.14.1+cpu` | Wheel PyPI chính thức trên Windows đã là CPU; `pip install -r requirements.txt` phải chạy được với index mặc định |
+| 2026-10-25 | Tải CIFAR-10 bằng `torchvision.datasets` (`download=True`) | Tải thủ công từ cs.toronto.edu | Tự động, có kiểm tra MD5 tích hợp, giải nén đúng cấu trúc; fallback thủ công vẫn được ghi trong `data/README.md` |
+| 2026-10-25 | Nạp toàn bộ ảnh CIFAR-10 vào RAM (`in_memory=True`) | Đọc pickle từng lần qua `torchvision.datasets` | CIFAR-10 chỉ ~150 MB; nạp RAM nhanh hơn nhiều trên Windows nơi I/O là nút thắt |
+| 2026-10-25 | `TransformSubset` tự viết thay vì `torch.utils.data.Subset` | `Subset` + gán `subset.dataset.transform` | `Subset` giữ tham chiếu dataset gốc → gán `.transform` làm hỏng transform của cả tập train. `TransformSubset` giữ transform riêng cho từng split |
+| 2026-10-25 | Chia train/val **phân tầng theo lớp** (`stratified_indices`) | `random_split` ngẫu nhiên | Bảo đảm val có cùng tỉ lệ 10 lớp với train → val accuracy phản ánh đúng đánh giá |
+| 2026-10-25 | Augmentation trên ảnh 32×32 **trước**, resize 224 **sau** | Resize 224 trước rồi crop | Crop trên ảnh gốc 32×32 giữ được nội dung chi tiết; crop trên ảnh up-sample 224 chỉ crop vùng upscale |
+| 2026-10-25 | Ép stdout/stderr về UTF-8 trong `setup_logging` | Bỏ tiếng Việt có dấu trong log | Console Windows dùng cp1252, log tiếng Việt gây `UnicodeEncodeError` làm sập tiến trình |
+| 2026-10-25 | `num_workers` bị giới hạn theo `os.cpu_count() - 1` | Cứ để 4 như config | Tránh spawn quá nhiều process trên máy CPU yếu; 0 worker nếu máy chỉ có ≤2 core |
+
+## Risks & Mitigations
+
+| Rủi ro | Khả năng | Tác động | Giảm thiểu | Phát hiện |
+|--------|----------|----------|------------|-----------|
+| Training quá chậm trên CPU (VGG11/DenseNet121) | Cao | Trượt deadline | Epoch ít (5), batch 64, `num_workers=4`, đo 1 epoch trước khi sweep | Log thời gian mỗi epoch |
+| Overfitting nặng do ảnh 32×32 upsample | Trung bình | Test acc thấp hơn val | Augmentation (crop/flip), weight decay, theo dõi gap val−train | Biểu đồ TensorBoard |
+| Tải CIFAR-10 lỗi mạng | Trung bình | Không chạy được | `download=True` có retry; fallback sang `FakeData` cho smoke test | Exception khi load |
+| Overfit từ quá nhiều epoch | Trung bình | Kết quả kém | Early stop theo val accuracy, lưu best checkpoint | Val acc giảm |
+
+## Open Questions
+
+- [x] Tên project + bài toán
+- [x] Input/output shape
+- [x] Tính năng cốt lõi (Must/Should/Could)
+- [x] Tech stack + lý do
+- [x] Metric đánh giá + target
+- [ ] Có được dùng `torch.compile` / AMP không (không — CPU-only, giữ đơn giản)
+
+## Definition of Done (áp dụng mỗi module)
+
+- [x] Đúng yêu cầu
+- [x] Code chạy end-to-end
+- [x] Tests pass (36/36 — `pytest -q`)
+- [x] Không có secrets / không có artifact lớn
+- [x] Code đã self-review
+- [x] Có thể giải thích được
+- [x] Docs đã cập nhật
+- [ ] Đã committed (Conventional Commit) — chưa khởi tạo git repo
