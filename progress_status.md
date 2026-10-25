@@ -11,7 +11,7 @@
 | Slug | `lab2` |
 | Bài toán | Phân loại ảnh CIFAR-10 (10 lớp) bằng model pre-trained ImageNet từ `torchvision.models`, so sánh transfer learning (freeze) và fine-tuning (unfreeze lớp cuối) |
 | Người dùng mục tiêu | Sinh viên môn AI/ML — Viện CNTT&ĐT, TSU TP.HCM |
-| Input | Ảnh RGB 32×32, batch `[B, 3, 32, 32]`, `float32`, normalize theo ImageNet mean/std |
+| Input | Ảnh RGB 32×32 → resize 224×224, batch `[B, 3, 224, 224]`, `float32`, normalize theo ImageNet mean/std |
 | Output | Logits `[B, 10]` → nhãn lớp + confidence |
 | Tính năng cốt lõi | Must: nạp model pre-trained (ResNet18/VGG11/DenseNet121), thay head, freeze/unfreeze, training loop, validation, TensorBoard, test evaluation. Should: config YAML, bảng so sánh, augmentation, metrics.json. Could: scheduler, gradient clipping, ONNX |
 | Tech construction | Python 3.13, PyTorch 2.14.1 (CPU), torchvision 0.29.1, TensorBoard 2.21.0, PyYAML, pytest |
@@ -41,6 +41,29 @@
 - Augmentation: RandomCrop(32, padding=4) + RandomHorizontalFlip + Normalize(ImageNet).
 - Metric: accuracy (val để chọn best), accuracy + macro-F1 + confusion matrix (test).
 
+### Đối chiếu với đề bài (`đề.txt`)
+
+> Bảng này là hợp đồng giữa đề bài và hiện thực. Mỗi mục được kiểm tra lại khi đóng milestone. Nguồn chi tiết: mục "2b" trong `README.md`.
+
+| # | Yêu cầu đề bài | Hiện thực | Module | Trạng thái |
+|---|-----------------|-----------|--------|-----------|
+| E1 | Experiment with different pre-trained models (VGG, DenseNet, etc.) | `src/models/factory.py` | M2 | ⏳ |
+| E2 | Adjust the hyperparameters (lr, batch size, etc.) | `configs/*.yaml` + `src/training/` | M3, M5 | ⏳ |
+| E3 | Use TensorBoard to monitor the training process | `src/training/trainer.py` | M3 | ⏳ |
+| O1 | Load a Pre-trained Model (`weights=`/`pretrained=True`) | `src/models/factory.py` | M2 | ⏳ |
+| O2 | Explore the Model Architecture — print model, identify layers & params | `src/models/factory.py` | M2 | ⏳ |
+| O3 | Adapt the Model — replace final classification layer (10 classes) | `src/models/factory.py` | M2 | ⏳ |
+| O4 | Freeze earlier layers (transfer learning) | `src/models/factory.py` | M2 | ⏳ |
+| O5 | Unfreeze a few of the final layers (fine-tuning) | `src/models/factory.py` | M2 | ⏳ |
+| O6 | Prepare the Data — load & prepare dataset | `src/data/` | **M1** | ✅ |
+| O7 | Use `torchvision.transforms` to preprocess | `src/data/transforms.py` | **M1** | ✅ |
+| O8 | Use `torch.utils.data.DataLoader` to create batches | `src/data/dataloader.py` | **M1** | ✅ |
+| O9 | Define the loss function and optimizer | `src/training/trainer.py` | M3 | ⏳ |
+| O10 | Write the training loop | `src/training/trainer.py` | M3 | ⏳ |
+| O11 | Evaluate the Model on a test dataset | `src/evaluation/metrics.py` | M4 | ⏳ |
+
+Bước 1 (Environment Setup) — ✅ xong: `requirements.txt` pin torch 2.14.1 / torchvision 0.29.1 / tensorboard 2.21.0, bản CPU.
+
 ## Architecture Snapshot (Phase 2 — DESIGN)
 
 - Pattern: transfer learning pipeline (config-driven, CLI theo module).
@@ -61,15 +84,15 @@
   - [x] `src/data/__main__.py` — CLI xuất artifact `config.yaml` + `metrics.json` + `logs.txt`
   - [x] `configs/data_config.yaml` — toàn bộ hyperparameter data pipeline
   - [x] `src/utils/config.py` + `src/utils/runs.py` — nạp YAML, tạo run dir, ghi JSON/artifact
-  - [x] Tests — 36 test unit + integration (`pytest -q` → 36 passed)
+  - [x] Tests — `pytest -q` → **47 passed** (36 test data pipeline + 11 test `prepare.py`)
   - [x] Run — `python -m src.data` → `results/runs/20261025-150847/`
   - [x] Biểu đồ — `scripts/plot_data_report.py` → `plots/class_distribution.png`, `plots/sample_images.png`
   - [x] `src/data/prepare.py` — xuất `data/processed/` (`.npy`) + `data/splits/` (`.npz`/`.json`), verify bằng hash nội dung ảnh
   - [x] `scripts/benchmark_loading.py` — đo throughput để quyết định có cache ảnh 224×224 (kết luận: không, tốn 7 GB mà không cải thiện đáng kể)
-  - [x] Tests bổ sung — `tests/unit/test_prepare.py` → 11 passed
+  - [x] Tests bổ sung — `tests/unit/test_prepare.py` → 11 test (tổng 47)
 - **Status** — Describe ✅ / Generate ✅ / Review ✅ / Run ✅ / Test ✅ / Refactor ✅ / Commit ✅
 - **Last run** — `results/runs/20261025-150847/` (metrics.json: validation status PASS)
-- **Commit** — `f130862` (M0 scaffold), `d0321eb` (M1 data pipeline)
+- **Commit** — `f130862` (M0 scaffold), `d0321eb` (M1 data pipeline), `28aa1ff` (prepare step: `data/processed` + `data/splits`)
 - **DoD checklist** — xem `checklists/dod.md` (workspace skill)
 
 ## Module Log
@@ -78,7 +101,7 @@
 |---|--------|------|--------|--------|---------|
 | 0 | M0 — Environment & Scaffold | 2026-10-25 | ✅ | — | Python 3.13.2, torch 2.14.1+cpu, torchvision 0.29.1+cpu, tensorboard 2.21.0; CPU-only |
 | 0b | M0b — Dataset CIFAR-10 | 2026-10-25 | ✅ | — | Tải + giải nén + verify: 50k train / 10k test, 10 lớp cân bằng, ảnh 32×32 |
-| 1 | M1 — Data pipeline (dataset/transforms/split) | 2026-10-25 | ✅ | `d0321eb` | 45k/5k/10k stratified seed=42; ảnh [B,3,224,224] float32; 36+11 test pass; run `20261025-150847` |
+| 1 | M1 — Data pipeline (dataset/transforms/split) | 2026-10-25 | ✅ | `d0321eb` + `28aa1ff` | 45k/5k/10k stratified seed=42; ảnh [B,3,224,224] float32; 47 test pass; run `20261025-150847` |
 | 2 | M2 — Model factory (backbone/head/freeze) | 2026-10-25 | ⏳ | — | |
 | 3 | M3 — Training loop + TensorBoard | 2026-10-25 | ⏳ | — | |
 | 4 | M4 — Evaluation & metrics | 2026-10-25 | ⏳ | — | |
@@ -106,6 +129,11 @@
 | 2026-10-25 | `processed/` giữ ảnh gốc 32×32, **không** resize 224 | Cache ảnh 224×224 uint8 (7.0 GB) | Resize phải ở transform lúc train: `RandomCrop` cần thao tác trên ảnh gốc 32×32, và augmentation phải khác nhau mỗi epoch. Benchmark: workers=4 → 403 ảnh/s (~1.9 phút/epoch) → data loading không phải nút thắt, không cần cache 7 GB |
 | 2026-10-25 | Verify split bằng **hash nội dung ảnh**, không so chỉ số | So sánh trực tiếp `set(train_idx) ∩ set(test_idx)` | `train_idx` (0..49.999) và `test_idx` (0..9.999) thuộc hai không gian chỉ số khác nhau → so chánh overlap trực tiếp là vô nghĩa và tạo cảnh báo sai. So hash nội dung ảnh mới thật sự phát hiện rò rỉ |
 | 2026-10-25 | `data/splits/` lưu cả `.npz` (dùng trong code) và `.json` (đọc/diff được) | Chỉ `.npz` | `.npz` nạp nhanh bằng `np.load`; `.json` giúp con người kiểm tra và git diff |
+| 2026-10-25 | Thêm bảng **"Đối chiếu với đề bài"** vào `README.md` + `progress_status.md` | Chỉ mô tả tự do | Đề bài có 3 bài tập (E1–E3) + 7 bước (O1–O11); bảng ánh xạ từng yêu cầu → file/module/trạng thái giúp kiểm tra "đã làm đúng đề chưa" mỗi milestone, tránh docs trôi khỏi đề |
+| 2026-10-25 | Sửa shape trong docs thành `[B, 3, 224, 224]` (không phải `[B, 3, 32, 32]`) | Giữ nguyên như đã viết | Ảnh 32×32 được resize lên 224×224 **trong transform**; shape thật sau transform là 224×224. Docs ghi sai khiến người đọc hiểu sai kích thước đầu vào model |
+| 2026-10-25 | Đánh dấu rõ lệnh/lệnh-cfg **chưa tồn tại** trong README thay vì để trông như đã có | Bỏ hẳn mục 6.6 | `src/models`, `src/training`, `src/evaluation` mới chỉ có `__init__.py`; `configs/train_config.yaml` chưa tạo. Ghi rõ trạng thái "thiết kế dự kiến" tránh gây hiểu nhầm là đã chạy được |
+| 2026-10-25 | Bổ sung kiểm tra **MD5 archive** vào `scripts/verify_data.py` | Chỉ kiểm tra số mẫu / lớp / shape | `download_data.py` và docs đều claim "có kiểm tra MD5 tích hợp" nhưng script thực tế **không** kiểm tra → claim sai. Nay đã khớp: hash theo chunk, so với `c58f30108f718f92721af3b95e74349a`, exit 1 + hướng dẫn tải lại |
+| 2026-10-25 | Ghi rõ 4 tiêu chí đánh giá là **mục tiêu tự đặt**, không phải ngưỡng từ đề bài | Để trông như yêu cầu của đề | `đề.txt` không đặt ngưỡng accuracy nào; ghi rõ nguồn gốc tránh hiểu nhầm là yêu cầu giáo viên |
 
 ## Risks & Mitigations
 
@@ -134,4 +162,5 @@
 - [x] Code đã self-review
 - [x] Có thể giải thích được
 - [x] Docs đã cập nhật
-- [x] Đã committed (Conventional Commit) — `f130862` (M0), `d0321eb` (M1)
+- [x] **Docs bám sát `đề.txt`** — mục "Đối chiếu với đề bài" trong `README.md` và `progress_status.md` được cập nhật mỗi milestone
+- [x] Đã committed (Conventional Commit) — `f130862` (M0), `d0321eb` (M1), `28aa1ff` (prepare)

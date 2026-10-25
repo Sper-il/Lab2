@@ -28,12 +28,37 @@ Công cụ: PyTorch 2.x + torchvision + TensorBoard.
 - Tải tự động qua `torchvision.datasets.CIFAR10` — không cần thu thập dữ liệu thủ công.
 - Đủ nhỏ để train nhanh trên CPU, đủ lớn để đo được khác biệt giữa các chiến lược freeze/fine-tune.
 
-**Input:** ảnh RGB 32×32 × 3 (một batch: `[B, 3, 32, 32]`, dtype `float32`, đã normalize).
+**Input:** ảnh RGB 32×32 × 3 → được resize lên **224×224** để khớp input của backbone pre-trained ImageNet (một batch: `[B, 3, 224, 224]`, dtype `float32`, đã normalize theo ImageNet mean/std).
 **Output:** vector logits `[B, 10]` → `argmax` ra nhãn lớp; probability qua softmax.
 
 **Chia dữ liệu:** CIFAR-10 chuẩn — 50.000 ảnh train / 10.000 ảnh test. Ta lấy 5.000 ảnh từ tập train làm **validation** (stratified, seed cố định), còn lại 45.000 để train. Test set chỉ dùng để đánh giá cuối cùng.
 
 **Metric:** accuracy trên validation (để chọn best checkpoint) và accuracy trên test (báo cáo cuối). Bổ sung: per-class precision/recall/F1, confusion matrix, thời gian suy luận.
+
+## 2b. Đối chiếu với đề bài (Practice 2)
+
+> Nguồn: `đề.txt`. Bảng này là hợp đồng giữa đề bài và hiện thực — dùng để kiểm tra "đã làm đúng chưa" ở mỗi milestone.
+
+| # | Yêu cầu trong `đề.txt` | Nội dung cụ thể | Hiện thực | Module | Trạng thái |
+|---|------------------------|-----------------|-----------|--------|-----------|
+| E1 | Experiment with different pre-trained models (VGG, DenseNet, etc.) | So sánh ResNet18 / VGG11 / DenseNet121 | `src/models/factory.py` | M2 | ⏳ |
+| E2 | Adjust the hyperparameters (learning rate, batch size, etc.) | Sweep lr / batch size / optimizer / epoch | `configs/*.yaml` + `src/training/` | M3, M5 | ⏳ |
+| E3 | Use TensorBoard to monitor the training process | Scalar (loss/acc), histogram weight, graph, image | `src/training/trainer.py` | M3 | ⏳ |
+| O1 | Load a Pre-trained Model (`pretrained=True` / `weights=`) | `torchvision.models.*(weights="DEFAULT")` | `src/models/factory.py` | M2 | ⏳ |
+| O2 | Explore the Model Architecture — print model, identify layers & params | In cấu trúc + đếm `params_total` / `params_trainable` | `src/models/factory.py` | M2 | ⏳ |
+| O3 | Adapt the Model — replace final classification layer (10 classes) | Thay `fc` / `classifier` bằng `Linear(..., 10)` | `src/models/factory.py` | M2 | ⏳ |
+| O4 | Freeze earlier layers (transfer learning) | `freeze_backbone` — chỉ train head | `src/models/factory.py` | M2 | ⏳ |
+| O5 | Unfreeze a few of the final layers (fine-tuning) | `fine_tune` — unfreeze block cuối + norm + head | `src/models/factory.py` | M2 | ⏳ |
+| O6 | Prepare the Data — load & prepare dataset | CIFAR-10 45k/5k/10k, in-memory | `src/data/` | **M1** | ✅ |
+| O7 | Use `torchvision.transforms` to preprocess | RandomCrop+Flip → Resize 224 → ToTensor → Normalize | `src/data/transforms.py` | **M1** | ✅ |
+| O8 | Use `torch.utils.data.DataLoader` to create batches | 3 loader: 704/79/157 batch, `[B,3,224,224]` | `src/data/dataloader.py` | **M1** | ✅ |
+| O9 | Define the loss function and optimizer | `CrossEntropyLoss` + Adam | `src/training/trainer.py` | M3 | ⏳ |
+| O10 | Write the training loop | zero_grad → forward → loss → backward → step | `src/training/trainer.py` | M3 | ⏳ |
+| O11 | Evaluate the Model on a test dataset | Test acc + macro-F1 + confusion matrix | `src/evaluation/metrics.py` | M4 | ⏳ |
+
+**Bước 1 của đề — Environment Setup:** đã hoàn thành (`requirements.txt` pin `torch==2.14.1` / `torchvision==0.29.1` / `tensorboard==2.21.0`; CPU-only do máy không có GPU NVIDIA).
+
+**Phần Exercise còn lại (E1–E3) là trọng tâm M2–M5.**
 
 ## 3. Main Features
 
@@ -91,7 +116,9 @@ Công cụ: PyTorch 2.x + torchvision + TensorBoard.
      accuracy / F1 / confusion matrix → results/runs/<ts>/metrics.json
 ```
 
-Chi tiết từng interface: xem `docs/architecture.md` (sẽ bổ sung ở module Design).
+Chi tiết luồng dữ liệu: xem `docs/data-flow.md` (đã viết cho M1).
+
+> Sơ đồ trên mô tả **thiết kế đích** của toàn bộ pipeline. Phần đã hiện thực (M1) là khối `[CIFAR-10] → [Transforms] → [DataLoader]`; các khối còn lại thuộc M2–M4.
 
 ## 5. Folder Structure
 
@@ -108,16 +135,17 @@ lab2/
 │   │   ├── dataset.py     # Cifar10Dataset + TransformSubset
 │   │   ├── transforms.py  # train/val transform
 │   │   ├── split.py       # stratified_indices (45k/5k, seed=42)
+│   │   ├── prepare.py     # xuất data/processed/ + data/splits/
 │   │   └── dataloader.py  # DataLoaderConfig + build_dataloaders
 │   ├── utils/             # config YAML, run dir, logging, ghi artifact
 │   │   ├── config.py
 │   │   └── runs.py
-│   ├── models/            # factory chọn backbone + thay head + freeze/unfreeze
-│   │   └── factory.py
-│   ├── training/          # training loop, scheduler, checkpoint
-│   │   └── trainer.py
-│   └── evaluation/        # metrics, confusion matrix, visualize
-│       └── metrics.py
+│   ├── models/            # factory chọn backbone + thay head + freeze/unfreeze  ⏳ M2
+│   │   └── factory.py     # (chưa tạo)
+│   ├── training/          # training loop, scheduler, checkpoint  ⏳ M3
+│   │   └── trainer.py     # (chưa tạo)
+│   └── evaluation/        # metrics, confusion matrix, visualize  ⏳ M4
+│       └── metrics.py     # (chưa tạo)
 │
 ├── models/
 │   ├── checkpoints/       # best.pt theo từng run (gitignore)
@@ -126,18 +154,24 @@ lab2/
 │
 ├── notebooks/             # EDA, thử nhanh (đặt tên theo ngày)
 ├── tests/
-│   ├── unit/              # test factory, transforms, metrics
-│   └── integration/       # test end-to-end 1 epoch mini
+│   ├── unit/              # test transforms, split, dataset, prepare
+│   │   ├── test_transforms.py
+│   │   ├── test_split.py
+│   │   ├── test_dataset.py
+│   │   └── test_prepare.py
+│   └── integration/       # test end-to-end DataLoader
+│       └── test_dataloader_pipeline.py
 │
-├── docs/                  # architecture.md, data-flow.md
-├── configs/               # train_config.yaml, model_config.yaml, data_config.yaml
+├── docs/                  # data-flow.md (M1) — sẽ thêm architecture.md ở M2
+├── configs/               # data_config.yaml ✅ | train_config.yaml, model_config.yaml, eval_config.yaml ⏳
 ├── results/runs/<ts>/     # metrics.json, config.yaml, logs.txt, plots/
 │
 ├── .venv/                 # môi trường ảo Python 3.13 (gitignore)
-├── scripts/               # tiện ích: tải & verify dataset, sinh biểu đồ
+├── scripts/               # tiện ích: tải & verify dataset, sinh biểu đồ, benchmark
 │   ├── download_data.py
 │   ├── verify_data.py
-│   └── plot_data_report.py
+│   ├── plot_data_report.py
+│   └── benchmark_loading.py
 ├── requirements.txt
 ├── README.md
 ├── AI_Usage.md
@@ -243,7 +277,9 @@ validation: total_train_plus_val=50000, test_samples=10000 → PASS
 
 Artifact ghi ra: `results/runs/20261025-150847/` gồm `config.yaml`, `metrics.json`, `logs.txt`, `plots/class_distribution.png`, `plots/sample_images.png`.
 
-### 6.6 Chạy training (sẽ có sau khi build M2–M3)
+### 6.6 Chạy training (⚠️ sẽ có sau khi build M2–M3)
+
+> **Trạng thái:** các lệnh dưới đây là **thiết kế dự kiến**, chưa chạy được — `src/models/factory.py`, `src/training/trainer.py`, `src/evaluation/metrics.py` hiện mới chỉ là thư mục rỗng (`__init__.py`), và `configs/train_config.yaml` / `model_config.yaml` / `eval_config.yaml` chưa được tạo. Được cập nhật khi M2–M4 hoàn tất.
 
 ```powershell
 # Train 1 model (config trong configs/train_config.yaml)
@@ -271,23 +307,26 @@ Artifact ghi ra: `results/runs/20261025-150847/` gồm `config.yaml`, `metrics.j
 **Input**
 
 ```python
-# Một batch ảnh CIFAR-10 đã transform, shape [B, 3, 32, 32]
-images = next(iter(train_loader))["image"]   # torch.float32
+# Một batch ảnh CIFAR-10 đã transform, shape [B, 3, 224, 224]
+images, labels = next(iter(train_loader))
+# images: torch.float32 [64, 3, 224, 224] | labels: torch.int64 [64]
 ```
 
 **Output**
+
+> ⚠️ **Schema dự kiến** — chưa có số liệu thật cho tới khi hoàn thành M3–M4. Các giá trị số dưới đây là **placeholder minh hoạ định dạng**, không phải kết quả đo được. File `metrics.json` thực tế sẽ được sinh ra sau khi train.
 
 ```json
 {
   "model": "resnet18",
   "strategy": "freeze_backbone",
   "epochs": 5,
-  "best_val_accuracy": 0.7412,
-  "test_accuracy": 0.7308,
-  "macro_f1": 0.7231,
+  "best_val_accuracy": 0.0,
+  "test_accuracy": 0.0,
+  "macro_f1": 0.0,
   "params_total": 11689512,
   "params_trainable": 5130,
-  "inference_time_ms_per_sample": 4.8
+  "inference_time_ms_per_sample": 0.0
 }
 ```
 
@@ -304,17 +343,21 @@ Bảng so sánh được điền sau khi chạy; nguồn chuẩn: `results/runs/
 
 Tiêu chí đạt (định nghĩa trước khi code):
 
-| Metric | Target |
-|--------|--------|
-| Test accuracy (freeze backbone, ResNet18) | ≥ 0.70 |
-| Test accuracy (fine-tune) | ≥ 0.80 |
-| Overfitting (val acc − train acc) | ≤ 0.15 |
-| Thời gian 1 epoch (CPU) | ≤ 15 phút |
+> ⚠️ **Đề bài không đặt ngưỡng accuracy cụ thể.** Bốn tiêu chí dưới đây là **mục tiêu tự đặt** của project để có thang đo, được ghi lại trước khi code để tránh "chỉnh kết quả cho vừa". Giá trị tham chiếu: transfer learning trên CIFAR-10 với ResNet18 đạt ~85–90% (fine-tune, 224×224).
+
+| Metric | Target | Nguồn |
+|--------|--------|-------|
+| Test accuracy (freeze backbone, ResNet18) | ≥ 0.70 | tự đặt |
+| Test accuracy (fine-tune) | ≥ 0.80 | tự đặt |
+| Overfitting (val acc − train acc) | ≤ 0.15 | tự đặt |
+| Thời gian 1 epoch (CPU) | ≤ 15 phút | tự đặt |
 
 ## 9. Limitations
 
-- **CPU-only**: mỗi epoch VGG11/DenseNet121 trên CIFAR-10 mất 10–20 phút với `num_workers=4`; không thể chạy sweep rộng.
+- **CPU-only**: ước lượng mỗi epoch VGG11/DenseNet121 trên CIFAR-10 mất **10–20 phút** với `num_workers=4` (⚠️ con số này **chưa đo thực tế** — sẽ cập nhật sau khi chạy M3); không thể chạy sweep rộng. Riêng phần data loading đã đo được ~1.9 phút/epoch, phần còn lại là forward/backward của backbone trên CPU.
 - **Ảnh 32×32 được upsample lên 224×224** để khớp input của model pre-trained — tốn bộ nhớ và làm mất một phần chi tiết; đây là hệ quả của việc dùng backbone ImageNet.
+
+  > **Ghi chú về độ mờ ảnh:** không phải dữ liệu hỏng. Đo trên 256 ảnh đầu: `mean 119.3`, `std 62.9`, chỉ 0.30% pixel đen tuyệt đối và 0.72% trắng tuyệt đối, histogram phân bố đều quanh giữa → dữ liệu lành mạnh. Ảnh vẫn mờ vì CIFAR-10 gốc chỉ 32×32 và resize 224 chỉ nội suy chứ không tạo thêm chi tiết. Chi tiết đo đạc: `data/README.md`.
 - **Chỉ 5 epoch mặc định** để phù hợp giới hạn thời gian; kết quả chưa hội tụ hoàn toàn.
 - BatchNorm statistics của backbone được đóng băng khi freeze → không tối ưu lại theo phân phối CIFAR.
 - Chưa thử `torch.compile`, AMP, hay distributed training.

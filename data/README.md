@@ -7,6 +7,22 @@
 - Trang chủ: [https://www.cs.toronto.edu/~kriz/cifar.html](https://www.cs.toronto.edu/~kriz/cifar.html)
 - File tải trực tiếp: [cifar-10-python.tar.gz](https://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz) (~163 MB)
 
+| Link | Trạng thái (kiểm tra 2026-10-25) |
+|------|----------------------------------|
+| [cifar-10-python.tar.gz](https://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz) | ✅ 200 OK — 170.498.071 byte — **dùng link này** |
+| [cifar-10-binary.tar.gz](https://www.cs.toronto.edu/~kriz/cifar-10-binary.tar.gz) | ✅ 200 OK — 170.052.171 byte — định dạng binary, **torchvision không đọc được**, chỉ dùng khi link chính bị chết |
+
+### Kiểm tra tính toàn vẹn sau khi tải
+
+```powershell
+Get-FileHash data\raw\cifar-10-python.tar.gz -Algorithm MD5
+```
+
+| File | MD5 chuẩn |
+|------|-----------|
+| `cifar-10-python.tar.gz` | `c58f30108f718f92721af3b95e74349a` |
+| `cifar-10-binary.tar.gz` | `6d958be074577803d12ecdefd02955f39262c83c16fe9348329d7fe0b5c001ce` |
+
 ## Cách 1 — Tự động (khuyến nghị)
 
 ```powershell
@@ -18,7 +34,7 @@
 .\.venv\Scripts\python.exe -m src.data.prepare
 ```
 
-Script sẽ tải về `data/raw/cifar-10-python.tar.gz`, giải nén thành `data/raw/cifar-10-batches-py/`, rồi kiểm tra số lượng mẫu, phân bố lớp và shape ảnh. Bước 2 xuất tiếp ảnh dạng `.npy` và file split.
+Script sẽ tải về `data/raw/cifar-10-python.tar.gz`, giải nén thành `data/raw/cifar-10-batches-py/`, rồi kiểm tra **MD5 archive**, số lượng mẫu, phân bố lớp và shape ảnh. Bước 2 xuất tiếp ảnh dạng `.npy` và file split.
 
 ## Cách 2 — Tải thủ công
 
@@ -84,6 +100,22 @@ Nội dung `.npz` dùng **cùng thuật toán** `stratified_indices` với pipel
 CIFAR-10 chỉ có 32×32, trong khi các backbone pre-trained ImageNet (`resnet18`, `vgg11`, `densenet121`) kỳ vọng input 224×224. Pipeline của project sẽ **resize 32 → 224** (đồng thời dùng `RandomCrop(32, padding=4)` + `RandomHorizontalFlip` cho augmentation) rồi normalize theo mean/std của ImageNet.
 
 Đây là đánh đổi bắt buộc của hướng dùng pre-trained ImageNet. Nếu giữ nguyên 32×32 thì phải train từ đầu (`weights=None`) — mất đúng ý nghĩa của phần transfer learning trong đề bài.
+
+### Tại sao ảnh nhìn "mờ"? (đo thực tế)
+
+Đây là **đặc tính tự nhiên của CIFAR-10**, không phải dữ liệu hỏng. Thống kê trên 256 ảnh đầu:
+
+```text
+min 0.0   max 255.0   mean 119.3   std 62.9
+pixel == 0 (đen tuyệt đối):    0.30%
+pixel == 255 (trắng tuyệt đối): 0.72%
+```
+
+Histogram phân bố đều với đỉnh ở giữa (96–127 chiếm 18.3%) — dấu hiệu dữ liệu lành mạnh, không bị nén hay làm nhạt. Từng kênh cũng cân đối: R 124.2 / G 121.7 / B 112.0.
+
+Nguyên nhân: CIFAR-10 gốc chỉ 32×32, mỗi pixel đại diện cho một vùng trộn nhiều chi tiết → không thể phân biệt lông mèo với nền. Resize lên 224×224 chỉ **nội suy**, không tạo thêm thông tin, nên ảnh vẫn mờ ở 224.
+
+Đây là hệ quả không tránh được của việc dùng backbone ImageNet — đề bài quy định dùng pre-trained model, nên 224×224 là lựa chọn đúng. Xem mục "Ghi chú về độ mờ ảnh" trong `README.md` §9.
 
 ## Lưu ý
 

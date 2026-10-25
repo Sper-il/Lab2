@@ -2,6 +2,8 @@
 
 > Mô tả chi tiết luồng dữ liệu từ file gốc CIFAR-10 đến batch sẵn sàng cho model.
 > Module: **M1 — Data Pipeline**. Trạng thái: ✅ hoàn thành (run `20261025-150847`).
+>
+> **Phủ đề bài:** O6 (Prepare the Data), O7 (`torchvision.transforms`), O8 (`DataLoader`). Chi tiết ở §7b.
 
 ## 1. Sơ đồ tổng thể
 
@@ -221,6 +223,22 @@ Mọi tham số nằm trong `configs/data_config.yaml`:
 | `augment` | `true` | Bật augmentation cho tập train |
 | `in_memory` | `true` | Nạp ảnh vào RAM |
 | `download` | `false` | Cho phép tải tự động nếu thiếu dữ liệu |
+| `pin_memory` | `false` | Chỉ có tác dụng khi chạy trên GPU |
+| `persistent_workers` | `false` | Giữ worker sống giữa các epoch (chỉ hiệu lực khi `num_workers > 0`) |
+
+Ngoài ra `configs/data_config.yaml` còn có section `split.strategy: stratified` — hiện chỉ là ghi chú, `stratified_indices` luôn dùng phương pháp phân tầng.
+
+## 7b. Ánh xạ với đề bài (`đề.txt`)
+
+Module này hiện thực 3 yêu cầu trong đề:
+
+| # | Yêu cầu đề bài | Ở đâu trong module |
+|---|-----------------|--------------------|
+| O6 | *Prepare the Data: Load and prepare your dataset* | `src/data/dataset.py` (`Cifar10Dataset`), `src/data/split.py` (45k/5k/10k), `src/data/prepare.py` (xuất `.npy` + split) |
+| O7 | *Use `torchvision.transforms` to preprocess the data* | `src/data/transforms.py` — `build_train_transform` / `build_val_transform` |
+| O8 | *Use `torch.utils.data.DataLoader` to create data batches* | `src/data/dataloader.py` — `build_dataloaders` → 3 loader, batch `[64, 3, 224, 224]` float32 |
+
+Ba yêu cầu còn lại về phía model (O1–O5) và training (O9–O11) thuộc M2–M4.
 
 ## 8. Ranh giới module (cho M2–M5)
 
@@ -233,4 +251,4 @@ M1 **không làm**:
 
 - Không đụng tới model, optimizer, loss, training loop (thuộc M2–M3)
 - Không tự tạo test split mới — dùng nguyên 10.000 ảnh test chính thức
-- Không lưu ảnh đã xử lý xuống disk (không cần, RAM đủ)
+- Không resize ảnh xuống disk ở dạng 224×224 — `data/processed/` giữ **ảnh gốc 32×32**; việc resize diễn ra trong transform lúc train (xem §1b để biết lý do)
