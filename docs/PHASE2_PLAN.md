@@ -1,16 +1,16 @@
-# Phase 2 Plan - CIFAR-10 with Pre-trained PyTorch Architectures
+# Phase 2 Plan - CIFAR-10 with Pre-trained PyTorch Architectures (M2 – M4)
 
 **Ngày tạo:** 2026-10-25
-**Cập nhật:** 2026-10-25 (chia lại M2/M3/M4 cho 3 người, align với đề bài `đề.txt`)
-**Phase:** 2 - Model Development, Training & Evaluation
-**Số lượng người:** 3 người
-**Dự kiến hoàn thành:** Sau Phase 1 (M1 — Data pipeline ✅)
+**Cập nhật:** 2026-10-25 (viết lại — chỉ M2/M3/M4, bỏ chia 3 người)
+**Phase:** 2 — Model Development, Training & Evaluation
+**Phạm vi:** `M2` (Model factory) → `M3` (Training + TensorBoard) → `M4` (Evaluation & metrics)
+**Ngoài phạm vi:** `M1` ✅ đã xong (data pipeline) · `M5` (sweep + báo cáo tổng hợp) — xem `docs/plan-m2-m4.md` §4
 **Dataset:** CIFAR-10 (45k train / 5k val / 10k test, 32×32 RGB, 10 classes)
-**Runtime:** CPU-only (torch 2.14.1+cpu), 12 logical cores
+**Runtime:** CPU-only (torch 2.14.1+cpu, torchvision 0.29.1+cpu), 12 logical cores
 
 ---
 
-## 📋 YÊU CẦU TỪ ĐỀ BÀI (`đề.txt`)
+## 📋 YÊU CẦU TỪ ĐỀ BÀI (`đề.txt`) — phạm vi M2–M4
 
 ### 1. Learn (Nghiên cứu)
 - Loading pre-trained models từ `torchvision.models`
@@ -21,26 +21,26 @@
 - Model evaluation
 
 ### 2. Implement
-- ✅ Load CIFAR-10 dataset *(Phase 1 — M1 đã xong)*
-- ✅ Apply transforms *(Phase 1 — M1 đã xong)*
-- ✅ Create DataLoader batches *(Phase 1 — M1 đã xong)*
-- ⏳ **Load a Pre-trained Model** *(Người 1)*
-- ⏳ **Explore the Model Architecture** *(Người 1)*
-- ⏳ **Adapt the Model for a Specific Task** *(Người 1)*
-- ⏳ **Write the training loop** *(Người 2)*
-- ⏳ **Use TensorBoard to monitor** *(Người 2)*
-- ⏳ **Evaluate the Model** *(Người 3)*
+- ✅ Load CIFAR-10 dataset *(M1 — đã xong)*
+- ✅ Apply transforms *(M1 — đã xong)*
+- ✅ Create DataLoader batches *(M1 — đã xong)*
+- ⏳ **Load a Pre-trained Model** *(M2)*
+- ⏳ **Explore the Model Architecture** *(M2)*
+- ⏳ **Adapt the Model for a Specific Task** *(M2)*
+- ⏳ **Write the training loop** *(M3)*
+- ⏳ **Use TensorBoard to monitor** *(M3)*
+- ⏳ **Evaluate the Model** *(M4)*
 
 ### 3. Tasks
-- ⏳ **Experiment with different pre-trained models (VGG, DenseNet, etc.)** *(Người 1)*
-- ⏳ **Adjust the hyperparameters (learning rate, batch size, etc.)** *(Người 2)*
-- ⏳ **Visualize loss / monitoring** *(Người 2)*
+- ⏳ **Experiment with different pre-trained models (VGG, DenseNet, etc.)** *(M2)*
+- ⏳ **Adjust the hyperparameters (learning rate, batch size, etc.)** *(M3)*
+- ⏳ **Visualize loss / monitoring** *(M3)*
 
 ### 4. Deliver
 - ✅ Python code *(đang build)*
-- ⏳ **Brief report** *(3 reports + 1 final report)*
-- ⏳ **Loss graphs / TensorBoard logs** *(Người 2)*
-- ⏳ **Evaluation report + confusion matrix** *(Người 3)*
+- ⏳ **Brief report** *(3 report theo module + 1 final report)*
+- ⏳ **Loss graphs / TensorBoard logs** *(M3)*
+- ⏳ **Evaluation report + confusion matrix** *(M4)*
 
 ### 5. Use
 - `torchvision.models` (ResNet18, VGG11, DenseNet121)
@@ -48,37 +48,53 @@
 - `torch.utils.data.DataLoader`
 - PyTorch docs/tutorials
 
+### Mapping yêu cầu ↔ module
+
+| Mã | Yêu cầu trong `đề.txt` | Module |
+|-----|------------------------|--------|
+| E1 | Experiment with different pre-trained models (VGG, DenseNet, etc.) | **M2** |
+| E2 | Adjust the hyperparameters (learning rate, batch size, etc.) | **M3** |
+| E3 | Use TensorBoard to monitor the training process | **M3** |
+| O1 | Load a Pre-trained Model | **M2** |
+| O2 | Explore the Model Architecture | **M2** |
+| O3 | Adapt the Model for a Specific Task | **M2** |
+| O4 | Freeze earlier layers (transfer learning) | **M2** |
+| O5 | Unfreeze final layers (fine-tuning) | **M2** |
+| O9 | Define the loss function and optimizer | **M3** |
+| O10 | Write the training loop | **M3** |
+| O11 | Evaluate the Model | **M4** |
+
 ---
 
-## Tổng quan Workflow Phase 2
+## Tổng quan Workflow
 
 ```
 ┌─────────────────────┐    ┌─────────────────────┐    ┌─────────────────────┐
-│  Load + Adapt       │───→│  Training Loop +    │───→│  Evaluation +        │
-│  Pre-trained Model  │    │  TensorBoard +      │    │  Metrics + Plots     │
-│  Freeze / Unfreeze  │    │  Hyperparameter Tune│    │                      │
-│   (Người 1)         │    │   (Người 2)         │    │   (Người 3)         │
+│  M2 — MODEL FACTORY │───→│  M3 — TRAINING      │───→│  M4 — EVALUATION    │
+│                     │    │  + TENSORBOARD      │    │  + METRICS          │
+│  Load pre-trained   │    │                     │    │                     │
+│  Explore arch       │    │  forward → loss     │    │  test accuracy      │
+│  Replace head       │    │  → backward → step  │    │  macro-F1           │
+│  Freeze / Unfreeze  │    │                     │    │  confusion matrix   │
+│  (E1, O1–O5)        │    │  (E2, E3, O9, O10)  │    │  (O11)             │
 └─────────────────────┘    └─────────────────────┘    └─────────────────────┘
         │                          │                          ▲
-        │    best model +          │    trained model +      │
-        │    best strategy         │    history +            │
-        │                          │    tb logs              │
+        │  model + strategy         │  best.pt + history       │
+        │  + model_config.yaml      │  + tb logs + metrics     │
         └──────────────────────────┴──────────────────────────┘
 ```
 
-### Phân chia theo đề bài
-
-| Nhóm | Người | Phụ trách | Files |
-|------|-------|-----------|-------|
-| **Model** | Người 1 | Load pre-trained, explore architecture, thay head, freeze/unfreeze, so sánh các backbone | `src/models/` |
-| **Training** | Người 2 | Training loop (forward, loss, backward, optimize) + TensorBoard + hyperparameter sweep | `src/training/` |
-| **Evaluation** | Người 3 | Evaluate trên test set + metrics + confusion matrix + biểu đồ | `src/evaluation/` |
+| Module | Phụ trách | Files | Yêu cầu đề |
+|--------|-----------|-------|-----------|
+| **M2** | Load pre-trained, explore architecture, thay head, freeze/unfreeze | `src/models/` | E1, O1–O5 |
+| **M3** | Training loop (forward, loss, backward, optimize) + TensorBoard + hyperparameter | `src/training/` | E2, E3, O9, O10 |
+| **M4** | Đánh giá trên test set + metrics + biểu đồ | `src/evaluation/` | O11 |
 
 ---
 
 ## ⚠️ YẾU TỐ QUAN TRỌNG: THỜI GIAN TRAIN TRÊN CPU
 
-Đã **đo thật** trên máy này (12 logical cores, `torch.set_num_threads(8)`, ResNet18 freeze):
+Đã **đo thật** trên máy này (12 logical cores, `torch.set_num_threads(8)`, ResNet18 freeze, 45k ảnh/epoch):
 
 | Input size | 1 epoch | 5 epoch | Ghi chú |
 |-----------|---------|---------|---------|
@@ -86,9 +102,7 @@
 | 128×128 | 18 phút | ~1.5 giờ | |
 | 64×64 | **5 phút** | ~24 phút | Dùng cho sweep rộng |
 
-Fine-tune toàn bộ mạng chậm hơn ~3× so với freeze.
-
-**Hệ quả trực tiếp:** VGG11 ở 224×224 mất **~144 phút/epoch** (≈12 giờ cho 5 epoch) → không khả thi trên CPU.
+Fine-tune toàn bộ mạng chậm hơn ~3× so với freeze. VGG11 ở 224×224 mất **~144 phút/epoch** (≈12 giờ cho 5 epoch) → không khả thi trên CPU.
 
 ### Chiến lược 2 tầng (quyết định bắt buộc)
 
@@ -101,37 +115,43 @@ Fine-tune toàn bộ mạng chậm hơn ~3× so với freeze.
 
 ---
 
-## PHÂN CÔNG CÔNG VIỆC
+# M2 — MODEL FACTORY
 
----
+> Phủ: **E1, O1, O2, O3, O4, O5** (6/11 yêu cầu trong phạm vi plan này)
 
-## 👤 NGƯỜI 1: Model Factory — Load, Explore, Adapt
-
-### Nhiệm vụ (theo đề)
+### 2.1 Nhiệm vụ (theo đề)
 1. **Load a Pre-trained Model** — nạp ResNet18 / VGG11 / DenseNet121 từ `torchvision.models` với `pretrained=True`
 2. **Explore the Model Architecture** — in cấu trúc, đếm layers & parameters
 3. **Adapt the Model for a Specific Task** — thay classification layer cuối về 10 lớp
 4. **Freeze earlier layers** (transfer learning) / **Unfreeze final layers** (fine-tuning)
 
-### File cần tạo/sửa
+### 2.2 File cần tạo/sửa
 
 | File | Chức năng | Trạng thái |
 |------|-----------|------------|
-| `src/models/registry.py` | **Chính** — Bảng tra cứu backbone + head spec | Tạo mới |
-| `src/models/factory.py` | **Chính** — `build_model()`, thay head, freeze/unfreeze | Tạo mới |
+| `src/models/registry.py` | **Chính** — Bảng tra cứu backbone + block structure đã introspect | Tạo mới |
+| `src/models/factory.py` | **Chính** — `build_model()`, thay head, freeze/unfreeze, đếm params | Tạo mới |
 | `src/models/__init__.py` | Export public API | Sửa thêm |
-| `src/models/__main__.py` | CLI khám phá — in cấu trúc, đếm params | Tạo mới |
+| `src/models/__main__.py` | CLI khám phá — in cấu trúc, đếm params, kiểm tra output shape | Tạo mới |
 | `configs/model_config.yaml` | Cấu hình model + chiến lược | Tạo mới |
-| `tests/unit/test_factory.py` | Unit test cho factory | Tạo mới |
-| `tests/integration/test_model_pipeline.py` | Integration test model ↔ dataloader | Tạo mới |
+| `tests/unit/test_factory.py` | Unit test factory (14 test) | Tạo mới |
+| `tests/integration/test_model_pipeline.py` | Integration test model ↔ dataloader (6 test) | Tạo mới |
 
-### Chi tiết implementation
+### 2.3 Chi tiết implementation
 
-#### 1.1. Registry — bảng tra cứu backbone
+#### 2.3.1. Registry — bảng tra cứu backbone
 
 ```python
 # src/models/registry.py
-"""Bảng tra cứu các backbone pre-trained hỗ trợ trong project."""
+"""Bảng tra cứu các backbone pre-trained hỗ trợ trong project.
+
+Cấu trúc backbone ở đây được introspect trực tiếp từ torchvision 0.29
+(không đoán), vì mỗi model có cách tổ chức head khác nhau:
+
+- resnet18     : fc = Linear(512, 1000)              | stage: layer1..layer4
+- vgg11        : classifier = Sequential[7]           | 8 Conv2d trong features
+- densenet121  : classifier = Linear(1024, 1000)     | denseblock1..4 + transition
+"""
 
 from __future__ import annotations
 
@@ -150,10 +170,10 @@ class BackboneSpec:
         builder: Hàm dựng model từ torchvision.
         head_attr: Tên attribute chứa classification head ("fc" | "classifier").
         head_type: "linear" (1 lớp Linear) | "sequential" (Sequential nhiều lớp).
-        head_is_sequential: Head có phải Sequential hay không.
         block_units: Đường dẫn các "đơn vị" (block) theo thứ tự nông → sâu.
             Dùng để unfreeze n block cuối.
-        extra_trainable: Đường dẫn module luôn trainable (VD: `features.norm5`).
+        extra_trainable: Đường dẫn module luôn trainable khi fine-tune
+            (VD: `features.transition3`, `features.norm5` của DenseNet).
     """
 
     builder: Callable[..., nn.Module]
@@ -164,9 +184,7 @@ class BackboneSpec:
 
 
 # --- ResNet18 ---
-# Cấu trúc: conv1 → bn1 → relu → maxpool → layer1..layer4 → avgpool → fc
-# Head gốc: fc = Linear(512, 1000)
-# Block cuối: layer4 (2 BasicBlock, 8.39M params)
+# conv1 → bn1 → relu → maxpool → layer1..layer4 → avgpool → fc
 _RESNET18 = BackboneSpec(
     builder=tv_models.resnet18,
     head_attr="fc",
@@ -175,10 +193,7 @@ _RESNET18 = BackboneSpec(
 )
 
 # --- VGG11 ---
-# Cấu trúc: features (8 conv block) → avgpool → classifier (Sequential 7 phần tử)
-# Head gốc: Linear(25088,4096) → ReLU → Dropout → Linear(4096,4096) → ReLU
-#            → Dropout → Linear(4096,1000)
-# Block cuối: 3 conv cuối của `features` (features.16, features.18)
+# features (8 conv block) → avgpool → classifier (Sequential 7 phần tử)
 _VGG11 = BackboneSpec(
     builder=tv_models.vgg11,
     head_attr="classifier",
@@ -190,9 +205,7 @@ _VGG11 = BackboneSpec(
 )
 
 # --- DenseNet121 ---
-# Cấu trúc: conv0 → norm0 → relu0 → pool0 → denseblock1..4 (+ transition1..3) → norm5
-# Head gốc: classifier = Linear(1024, 1000)
-# Block cuối: denseblock4 + transition3
+# conv0 → norm0 → relu0 → pool0 → denseblock1..4 (+ transition1..3) → norm5
 _DENSENET121 = BackboneSpec(
     builder=tv_models.densenet121,
     head_attr="classifier",
@@ -258,9 +271,7 @@ def get_module(model: nn.Module, path: str) -> nn.Module:
     return obj  # type: ignore[return-value]
 ```
 
-> ⚠️ **Đã verify bằng introspection thật** (không đoán) — xem bảng ở phần "Search Space" bên dưới.
-
-#### 1.2. Model Factory — file chính
+#### 2.3.2. Model Factory — file chính
 
 ```python
 # src/models/factory.py
@@ -270,28 +281,30 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-import torch
 import torch.nn as nn
+import torchvision.models as tv_models
 
-from src.models.registry import (
-    SUPPORTED_MODELS,
-    get_module,
-    resolve_spec,
-)
+from src.models.registry import SUPPORTED_MODELS, get_module, resolve_spec
 
-# Chi lay lop Linear CUOI CUNG cua head (khong lay cao phan "classifier" cua VGG).
-# Ly do: "classifier" cua VGG11 chua 103M params — neu unfreeze toan bo thi
-# 92.8% model van trainable, vo nghia "freeze backbone".
+# Enum weights tương ứng từng backbone (torchvision 0.29 chỉ có 1 giá trị mỗi model)
+_WEIGHT_ENUMS = {
+    "resnet18": "ResNet18_Weights",
+    "vgg11": "VGG11_Weights",
+    "densenet121": "DenseNet121_Weights",
+}
 
 
 def _head_modules(model: nn.Module, head_attr: str, last_only: bool) -> list[nn.Module]:
     """Trả về các module thuộc head cần giữ trainable.
 
+    ⚠️ Với VGG11, `classifier` chứa 103M params (2 tầng Linear lớn). Nếu
+    unfreeze toàn bộ thì 92.8% model vẫn trainable → mất ý nghĩa "freeze
+    backbone". Vì vậy mặc định chỉ lấy lớp Linear cuối cùng.
+
     Args:
         model: Model đã thay head.
         head_attr: Tên attribute chứa head.
-        last_only: Nếu True chỉ lấy lớp Linear cuối cùng (VGG11),
-            ngược lại lấy toàn bộ head.
+        last_only: Nếu True chỉ lấy lớp Linear cuối.
 
     Returns:
         Danh sách module.
@@ -358,7 +371,7 @@ def resolve_weights(name: str, weights: str | None):
         weights: "DEFAULT" | "IMAGENET1K_V1" | None.
 
     Returns:
-        Enum weights hoặc None.
+        Enum weights, chuỗi "DEFAULT", hoặc None.
 
     Raises:
         ValueError: Nếu tên weights không hợp lệ.
@@ -368,13 +381,8 @@ def resolve_weights(name: str, weights: str | None):
     if weights == "DEFAULT":
         return "DEFAULT"
 
-    enum_names = {
-        "resnet18": "ResNet18_Weights",
-        "vgg11": "VGG11_Weights",
-        "densenet121": "DenseNet121_Weights",
-    }
     key = name.strip().lower()
-    if key not in enum_names:
+    if key not in _WEIGHT_ENUMS:
         raise ValueError(f"Model không hỗ trợ: {name!r}")
     if weights != "IMAGENET1K_V1":
         raise ValueError(
@@ -382,7 +390,7 @@ def resolve_weights(name: str, weights: str | None):
             "torchvision 0.29 chỉ có 'DEFAULT' | 'IMAGENET1K_V1'"
         )
 
-    enum_cls = getattr(tv_models, enum_names[key])
+    enum_cls = getattr(tv_models, _WEIGHT_ENUMS[key])
     return getattr(enum_cls, "IMAGENET1K_V1")
 
 
@@ -409,7 +417,6 @@ def replace_head(model: nn.Module, name: str, num_classes: int) -> nn.Module:
         setattr(model, spec.head_attr, nn.Linear(old.in_features, num_classes))
         return model
 
-    # sequential: thay lớp Linear cuối cùng, giữ phần còn lại
     classifier = getattr(model, spec.head_attr)
     last_linear_idx = None
     for idx in range(len(classifier) - 1, -1, -1):
@@ -429,10 +436,6 @@ def replace_head(model: nn.Module, name: str, num_classes: int) -> nn.Module:
 
 def freeze_backbone(model: nn.Module, name: str, head_full: bool = False) -> nn.Module:
     """Đóng băng toàn bộ backbone, chỉ giữ head trainable.
-
-    ⚠️ Với VGG11, `head_full=False` (mặc định) chỉ giữ lớp Linear cuối
-    trainable. Nếu bật `head_full=True`, classifier của VGG11 chứa
-    103M params → 92.8% model vẫn trainable, mất ý nghĩa "freeze backbone".
 
     Args:
         model: Model đã thay head.
@@ -482,12 +485,10 @@ def unfreeze_last(
     for param in model.parameters():
         param.requires_grad_(False)
 
-    # Mở head
     for module in _head_modules(model, spec.head_attr, last_only=not head_full):
         for param in module.parameters():
             param.requires_grad_(True)
 
-    # Mở n block cuối + các module đi kèm (VD: transition3, norm5 của DenseNet)
     for path in spec.block_units[-n_blocks:]:
         for param in get_module(model, path).parameters():
             param.requires_grad_(True)
@@ -517,11 +518,12 @@ def count_parameters(model: nn.Module) -> dict[str, float]:
     }
 
 
-def describe_model(model: nn.Module) -> str:
+def describe_model(model: nn.Module, full: bool = True) -> str:
     """Sinh mô tả cấu trúc model dạng text (phục vụ đề bài bước 3).
 
     Args:
         model: Model cần mô tả.
+        full: Nếu True, in thêm toàn bộ cấu trúc (`str(model)`).
 
     Returns:
         Chuỗi text mô tả tổng quan + bảng layer + số parameters.
@@ -544,9 +546,10 @@ def describe_model(model: nn.Module) -> str:
             f"  {name:<20} {module.__class__.__name__:<25} "
             f"{n_params:>12,.0f} params"
         )
-    lines.append("-" * 70)
-    lines.append("FULL STRUCTURE:")
-    lines.append(str(model))
+    if full:
+        lines.append("-" * 70)
+        lines.append("FULL STRUCTURE:")
+        lines.append(str(model))
     lines.append("=" * 70)
     return "\n".join(lines)
 
@@ -563,14 +566,11 @@ def build_model(config: ModelConfig) -> nn.Module:
     name = config.name.strip().lower()
     spec = resolve_spec(name)
 
-    # 1. Dựng backbone kèm weights pre-trained
     weights = resolve_weights(name, config.weights)
-    model = spec.builder(weights=weights) if weights is not None else spec.builder(weights=None)
+    model = spec.builder(weights=weights)
 
-    # 2. Thay head cho đúng số lớp
     replace_head(model, name, config.num_classes)
 
-    # 3. Áp chiến lược train
     if config.strategy == "freeze_backbone":
         freeze_backbone(model, name, head_full=config.freeze_head_full)
     elif config.strategy == "fine_tune":
@@ -582,23 +582,32 @@ def build_model(config: ModelConfig) -> nn.Module:
     return model
 ```
 
-> ⚠️ **Lưu ý:** file trên dùng `tv_models` trong `resolve_weights` — cần `import torchvision.models as tv_models` ở đầu file.
-
-#### 1.3. CLI khám phá — in cấu trúc (đề bài bước 3)
+#### 2.3.3. CLI khám phá — in cấu trúc (đề bài bước 3)
 
 ```python
 # src/models/__main__.py
-"""CLI khám phá model: in cấu trúc, đếm parameters, kiểm tra output shape."""
+"""CLI khám phá model: in cấu trúc, đếm parameters, kiểm tra output shape.
+
+Dùng để trả lời trực tiếp yêu cầu đề bài bước 3:
+"Print the model to examine its structure. Identify the layers and parameters."
+
+Chạy:
+    python -m src.models --config configs/model_config.yaml
+    python -m src.models --model vgg11 --strategy fine_tune --print-model
+"""
 
 from __future__ import annotations
 
 import argparse
-import json
-from pathlib import Path
 
 import torch
 
-from src.models.factory import ModelConfig, build_model, count_parameters, describe_model
+from src.models.factory import (
+    ModelConfig,
+    build_model,
+    count_parameters,
+    describe_model,
+)
 from src.utils.config import load_config
 from src.utils.runs import create_run_dir, setup_logging, write_json
 
@@ -607,9 +616,15 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Khám phá model pre-trained")
     parser.add_argument("--config", default="configs/model_config.yaml")
     parser.add_argument("--model", default=None, help="Ghi đè tên model trong config")
-    parser.add_argument("--strategy", default=None, choices=["freeze_backbone", "fine_tune", "from_scratch"])
+    parser.add_argument(
+        "--strategy",
+        default=None,
+        choices=["freeze_backbone", "fine_tune", "from_scratch"],
+    )
     parser.add_argument("--num-classes", type=int, default=None)
-    parser.add_argument("--print-model", action="store_true", help="In toàn bộ cấu trúc")
+    parser.add_argument(
+        "--print-model", action="store_true", help="In thêm toàn bộ cấu trúc"
+    )
     args = parser.parse_args(argv)
 
     raw = load_config(args.config)
@@ -621,7 +636,7 @@ def main(argv: list[str] | None = None) -> int:
         strategy=args.strategy or section.get("strategy", "freeze_backbone"),
         weights=section.get("weights", "DEFAULT"),
         freeze_until=int(section.get("freeze_until", 1)),
-        dropout=float(section.get("dropout", 0.0)),
+        freeze_head_full=bool(section.get("freeze_head_full", False)),
     )
 
     run_dir = create_run_dir()
@@ -630,14 +645,15 @@ def main(argv: list[str] | None = None) -> int:
     model = build_model(config)
     stats = count_parameters(model)
 
-    print(describe_model(model) if args.print_model else describe_model(model))
+    print(describe_model(model, full=args.print_model))
 
-    # Kiểm tra forward shape
     model.eval()
     with torch.no_grad():
         dummy = torch.randn(1, 3, 224, 224)
         out = model(dummy)
-    print(f"Output shape: {tuple(out.shape)} (kỳ vọng (1, {config.num_classes}))")
+
+    expected = (1, config.num_classes)
+    print(f"Output shape: {tuple(out.shape)} (kỳ vọng {expected})")
 
     write_json(
         {
@@ -655,7 +671,7 @@ if __name__ == "__main__":
     raise SystemExit(main())
 ```
 
-### Search Space / So sánh model (đề bài: "Experiment with different pre-trained models")
+### 2.4 Config
 
 ```yaml
 # configs/model_config.yaml
@@ -677,15 +693,18 @@ model:
   strategy: freeze_backbone
 
   # Số block cuối mở gradient khi strategy = fine_tune
-  # resnet18: layer1..layer4 (4 stage) | vgg11: 8 conv block | densenet121: 4 denseblock
+  # resnet18: layer1..layer4 (4 stage)
+  # vgg11: 8 conv block trong features
+  # densenet121: 4 denseblock
   freeze_until: 1
 
-  # Với head Sequential (VGG11): true = train cả Linear phía trước lớp cuối
-  # false = chỉ lớp Linear cuối (KHUYẾN NGHỊ — xem bảng bên dưới)
+  # Với head Sequential (VGG11):
+  # true  = train cả Linear phía trước lớp cuối (classifier = 103M params!)
+  # false = chỉ lớp Linear cuối (KHUYẾN NGHỊ)
   freeze_head_full: false
 ```
 
-#### Số liệu đã đo thật (chạy code thật, không ước lượng)
+### 2.5 Số liệu đã đo thật (chạy code thật, không ước lượng)
 
 **Cấu trúc head sau khi thay về 10 lớp:**
 
@@ -704,9 +723,7 @@ model:
 | `vgg11` (`freeze_head_full: true`) | 119.6M / 128.8M = **92.8%** ⚠️ | 94.7% | 98.3% |
 | `densenet121` | 10,250 / 6.96M = **0.147%** | 2.17M = **31.1%** | 5.93M = **85.1%** |
 
-> ⚠️ **Phát hiện quan trọng — VGG11:** `classifier` của VGG11 chứa **103M params** (2 tầng `Linear(25088→4096)` và `Linear(4096→4096)`). Nếu "freeze backbone" mà unfreeze toàn bộ `classifier` thì **92.8% model vẫn trainable** → mất hoàn toàn ý nghĩa của transfer learning, và mỗi epoch chậm gần như full fine-tune.
->
-> → **Bắt buộc dùng `freeze_head_full: false`** (chỉ train `Linear(4096, 10)` = 40,970 params) cho VGG11. Đây là lý do plan dùng `freeze_head_full` làm cờ config thay vì hardcode.
+> ⚠️ **Vấn đề VGG11 — bắt buộc `freeze_head_full: false`:** `classifier` của VGG11 chứa **103M params** (2 tầng `Linear(25088→4096)` và `Linear(4096→4096)`). Nếu "freeze backbone" mà unfreeze toàn bộ `classifier` thì **92.8% model vẫn trainable** → mất hoàn toàn ý nghĩa của transfer learning, và mỗi epoch chậm gần như full fine-tune.
 
 > ⚠️ **Đã verify bằng introspection + chạy code thật** (không đoán):
 > - `vgg11.classifier` là `Sequential` **7 phần tử** — `Linear(25088,4096)` → ReLU → Dropout → `Linear(4096,4096)` → ReLU → Dropout → `Linear(4096,1000)`. Code giả định mọi model có `model.fc` sẽ **crash ngay** khi chạy VGG11.
@@ -715,46 +732,73 @@ model:
 > - `densenet121.features` có `denseblock1..4` xen kẽ `transition1..3`, kết thúc bằng `norm5`.
 > - Cả 3 model sau khi thay head đều cho output shape `(1, 10)` với input `(1, 3, 224, 224)`.
 
-### Requirements (theo đề)
+### 2.6 Requirements (theo đề)
 
-✅ **Load a Pre-trained Model**:
+✅ **O1 — Load a Pre-trained Model**:
 - `weights="DEFAULT"` nạp weights ImageNet cho cả 3 backbone
 - Bảng tra cứu `BACKBONE_REGISTRY` dễ mở rộng thêm model
 
-✅ **Explore the Model Architecture**:
+✅ **O2 — Explore the Model Architecture**:
 - `describe_model()` in tổng quan, bảng top-level layer, số params từng layer, full structure
 - `count_parameters()` trả về total / trainable / tỉ lệ %
 
-✅ **Adapt the Model for a Specific Task**:
+✅ **O3 — Adapt the Model for a Specific Task**:
 - `replace_head()` thay lớp cuối về 10 lớp — xử lý cả `Linear` lẫn `Sequential`
 
-✅ **Freeze earlier layers**:
+✅ **O4 — Freeze earlier layers**:
 - `freeze_backbone()` → chỉ head trainable
 - ⚠️ Với VGG11 phải đặt `freeze_head_full: false` — nếu không sẽ 92.8% model vẫn trainable
 
-✅ **Unfreeze final layers**:
+✅ **O5 — Unfreeze final layers**:
 - `unfreeze_last(model, name, n_blocks)` → mở block cuối + head theo `block_units` đã introspect
-- BatchNorm trong block được mở luôn (nếu không, BN chỉ dùng running stats)
+- BatchNorm trong block được mở luôn (nếu không, BN chỉ dùng running stats → không thích ứng phân bố CIFAR-10)
 
-### Test
-- Forward pass với input `(1, 3, 224, 224)` → verify output `(1, 10)` cho cả 3 model
-- `count_parameters`: verify `total == trainable + frozen`
-- Freeze: verify mọi param backbone có `requires_grad == False`
-- Freeze VGG11: verify `params_trainable_pct < 1%` (bắt lỗi `freeze_head_full` sai)
-- Fine-tune: verify `params_trainable > params_trainable(freeze)` và block cuối có gradient
-- VGG11: verify head vẫn có 7 phần tử và phần tử cuối là `Linear(4096, 10)`
-- `n_blocks` vượt số block của model → raise `ValueError`
-- Tên model sai / strategy sai → raise `ValueError` với message rõ ràng
+✅ **E1 — Experiment with different pre-trained models**:
+- CLI `--model resnet18|vgg11|densenet121` + `--strategy` để so sánh
 
-### Output cho Người 2
+### 2.7 Test
+
+**`tests/unit/test_factory.py`** (14 test):
+
+| Test | Kiểm tra |
+|------|---------|
+| `test_build_model_returns_cnn` | Output là `nn.Module` |
+| `test_output_shape_is_num_classes` | `(1,3,224,224)` → `(1,10)` |
+| `test_resnet_head_replaced` | `model.fc.out_features == 10` |
+| `test_vgg_head_replaced_keeps_layers` | `classifier` còn 7 phần tử, phần tử cuối `Linear(4096,10)` |
+| `test_densenet_head_replaced` | `model.classifier.out_features == 10` |
+| `test_freeze_only_head_trainable` | `params_trainable_pct < 1%` |
+| `test_freeze_backbone_no_grad` | `p.requires_grad == False` cho backbone |
+| `test_vgg_freeze_head_full_flag` | `freeze_head_full=True` → pct > 90% (bắt lỗi cấu hình) |
+| `test_finetune_unfreezes_more_params` | `params_trainable(fine_tune) > params_trainable(freeze)` |
+| `test_finetune_block_has_grad` | block cuối params `requires_grad == True` |
+| `test_count_parameters_consistent` | `total == trainable + frozen` |
+| `test_unknown_model_raises` | Tên sai → `ValueError` |
+| `test_invalid_strategy_raises` | Strategy sai → `ValueError` |
+| `test_invalid_n_blocks_raises` | `n_blocks` > số block → `ValueError` |
+
+**`tests/integration/test_model_pipeline.py`** (6 test):
+
+| Test | Kiểm tra |
+|------|---------|
+| `test_end_to_end_batch_to_logits` | Batch thật từ DataLoader → logits `(64,10)` |
+| `test_all_models_output_shape` | Cả 3 model cho shape đúng |
+| `test_frozen_backbone_gradients_none` | Sau backward, `.grad` của backbone vẫn `None` |
+| `test_head_gradients_not_none` | `.grad` của head khác `None` |
+| `test_checkpoint_save_load` | Save → load → cùng output |
+| `test_describe_model_contains_key_info` | Chuỗi mô tả chứa tên lớp + số params |
+
+> **Test nhanh:** dùng `weights=None` trong test để không tải ImageNet weights → mỗi test < 3 giây.
+
+### 2.8 Output cho M3
 - **Tên model + strategy** tốt nhất (VD: `resnet18` + `freeze_backbone`)
-- **`configs/model_config.yaml`** hoàn chỉnh để Người 2 dùng
+- **`configs/model_config.yaml`** hoàn chỉnh để M3 dùng
 - **Bảng so sánh params** của 3 backbone (đưa vào báo cáo)
 
-### Report cần viết (lưu vào `docs/reports/nguoi1_models_report.md`)
+### 2.9 Report (lưu vào `docs/reports/m2_models_report.md`)
 
 ```markdown
-# Model & Architecture Report
+# M2 — Model & Architecture Report
 
 ## 1. Pre-trained Models Implemented
 | Model | Source | Total Params | Trainable (freeze) | Trainable (fine-tune) |
@@ -785,15 +829,17 @@ model:
 
 ---
 
-## 👤 NGƯỜI 2: Training Loop + TensorBoard + Hyperparameters
+# M3 — TRAINING LOOP + TENSORBOARD
 
-### Nhiệm vụ (theo đề)
+> Phủ: **E2, E3, O9, O10**
+
+### 3.1 Nhiệm vụ (theo đề)
 1. **Define the loss function and optimizer**
 2. **Write the training loop** (forward, loss, backward, optimize)
 3. **Use TensorBoard to monitor the training process**
 4. **Adjust the hyperparameters** (learning rate, batch size, etc.)
 
-### File cần tạo/sửa
+### 3.2 File cần tạo/sửa
 
 | File | Chức năng | Trạng thái |
 |------|-----------|------------|
@@ -804,14 +850,14 @@ model:
 | `src/training/tensorboard_utils.py` | **Chính** — Ghi scalar/histogram/image lên TensorBoard | Tạo mới |
 | `src/training/__init__.py` | Export training modules | Sửa thêm |
 | `src/training/__main__.py` | CLI train + override hyperparameter + multi-model | Tạo mới |
-| `configs/train_config.yaml` | Cấu hình train + hyperparameter | Tạo mới |
+| `configs/train_config.yaml` | Cấu hình train + search space | Tạo mới |
 | `tests/unit/test_optimizer.py` | Unit test loss/optimizer/scheduler | Tạo mới |
 | `tests/unit/test_tensorboard_utils.py` | Unit test TensorBoard writer | Tạo mới |
 | `tests/integration/test_training_loop.py` | Integration test train end-to-end | Tạo mới |
 
-### Chi tiết implementation
+### 3.3 Chi tiết implementation
 
-#### 2.1. Loss & Optimizer
+#### 3.3.1. Loss & Optimizer
 
 ```python
 # src/training/loss.py
@@ -843,8 +889,9 @@ def build_criterion(name: str = "cross_entropy", label_smoothing: float = 0.0) -
     raise ValueError(
         f"Loss không hỗ trợ: {name!r}. Chọn: cross_entropy | label_smoothing"
     )
+```
 
-
+```python
 # src/training/optimizer.py
 """Factory tạo optimizer — chỉ truyền các tham số đang train."""
 
@@ -878,7 +925,8 @@ def build_optimizer(
         `torch.optim.Optimizer`.
 
     Raises:
-        ValueError: Nếu tên optimizer không hợp lệ.
+        ValueError: Nếu tên optimizer không hợp lệ hoặc model không có
+            tham số trainable nào.
     """
     params = [p for p in model.parameters() if p.requires_grad]
     if not params:
@@ -898,7 +946,7 @@ def build_optimizer(
     )
 ```
 
-#### 2.2. Scheduler
+#### 3.3.2. Scheduler
 
 ```python
 # src/training/scheduler.py
@@ -950,7 +998,7 @@ def build_scheduler(
     )
 ```
 
-#### 2.3. Training Loop (forward → loss → backward → optimize)
+#### 3.3.3. Training Loop (forward → loss → backward → optimize)
 
 ```python
 # src/training/trainer.py
@@ -965,6 +1013,7 @@ from typing import Any
 
 import torch
 import torch.nn as nn
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.utils.data import DataLoader
 
 
@@ -1018,7 +1067,11 @@ class Trainer:
         criterion: Loss function.
         optimizer: Optimizer (chỉ trên params trainable).
         device: Thiết bị chạy.
+        scheduler: LR scheduler (tuỳ chọn).
+        run_dir: Thư mục run để lưu checkpoint.
         history: Lịch sử metric mỗi epoch.
+        best_val_acc: Accuracy validation tốt nhất từng đạt.
+        best_epoch: Epoch đạt được `best_val_acc`.
     """
 
     def __init__(
@@ -1158,7 +1211,6 @@ class Trainer:
 
             train_loss, train_acc = self.train_epoch()
             val_loss, val_acc = self.validate()
-
             elapsed = time.perf_counter() - started
 
             self.history["train_loss"].append(train_loss)
@@ -1184,15 +1236,14 @@ class Trainer:
                     lr=self.optimizer.param_groups[0]["lr"],
                     seconds=elapsed,
                 )
+                tb_writer.log_grad_norms(self.model, epoch)
 
-            # Scheduler
             if self.scheduler is not None:
                 if isinstance(self.scheduler, ReduceLROnPlateau):
                     self.scheduler.step(val_acc)
                 else:
                     self.scheduler.step()
 
-            # Checkpoint theo val accuracy
             if val_acc > self.best_val_acc:
                 self.best_val_acc = val_acc
                 self.best_epoch = epoch
@@ -1204,14 +1255,17 @@ class Trainer:
                     )
             else:
                 patience_counter += 1
-                if early_stopping_patience and patience_counter >= early_stopping_patience:
+                if (
+                    early_stopping_patience
+                    and patience_counter >= early_stopping_patience
+                ):
                     print(f"Early stopping tại epoch {epoch} (val acc không cải thiện)")
                     break
 
         return self.history
 ```
 
-#### 2.4. TensorBoard — monitor training process (đề bài bước 3)
+#### 3.3.4. TensorBoard — monitor training process (đề bài bước 3)
 
 ```python
 # src/training/tensorboard_utils.py
@@ -1224,13 +1278,18 @@ from pathlib import Path
 import torch
 from torch.utils.tensorboard import SummaryWriter
 
+# Mean/std chuẩn ImageNet — dùng để denormalize ảnh trước khi ghi lên TB
+IMAGENET_MEAN = (0.485, 0.456, 0.406)
+IMAGENET_STD = (0.229, 0.224, 0.225)
+
 
 class TensorBoardLogger:
     """Wrapper quanh `SummaryWriter` với tag chuẩn hoá.
 
     Attributes:
-        writer: `SummaryWriter` gốc.
         run_dir: Thư mục run.
+        enabled: Bật/tắt ghi log.
+        writer: `SummaryWriter` gốc (None nếu disabled).
     """
 
     def __init__(self, run_dir: Path, enabled: bool = True):
@@ -1255,7 +1314,8 @@ class TensorBoardLogger:
         """Ghi scalar của 1 epoch.
 
         Tags:
-            train/loss, val/loss, train/accuracy, val/accuracy, lr, epoch/time_seconds
+            train/loss, val/loss, train/accuracy, val/accuracy, lr,
+            epoch/time_seconds
         """
         if self.writer is None:
             return
@@ -1266,8 +1326,8 @@ class TensorBoardLogger:
         self.writer.add_scalar("lr", lr, epoch)
         self.writer.add_scalar("epoch/time_seconds", seconds, epoch)
 
-    def log_weight_histograms(self, model: torch.nn.Module, epoch: int) -> None:
-        """Ghi histogram trọng số các layer chính (phát hiện exploding/vanishing).
+    def log_grad_norms(self, model: torch.nn.Module, epoch: int) -> None:
+        """Ghi độ lớn gradient mỗi layer (phát hiện gradient explosion).
 
         Args:
             model: Model cần ghi.
@@ -1277,18 +1337,22 @@ class TensorBoardLogger:
             return
         for name, param in model.named_parameters():
             if param.requires_grad and param.grad is not None:
-                self.writer.add_histogram(
-                    f"model/grad/{name}", param.grad, epoch
+                self.writer.add_scalar(
+                    f"grad_norm/{name}", param.grad.norm().item(), epoch
                 )
 
-    def log_grad_norms(self, model: torch.nn.Module, epoch: int) -> None:
-        """Ghi độ lớn gradient mỗi layer."""
+    def log_weight_histograms(self, model: torch.nn.Module, epoch: int) -> None:
+        """Ghi histogram trọng số các layer trainable.
+
+        Args:
+            model: Model cần ghi.
+            epoch: Epoch hiện tại.
+        """
         if self.writer is None:
             return
         for name, param in model.named_parameters():
-            if param.requires_grad and param.grad is not None:
-                norm = param.grad.norm().item()
-                self.writer.add_scalar(f"grad_norm/{name}", norm, epoch)
+            if param.requires_grad:
+                self.writer.add_histogram(f"model/weights/{name}", param, epoch)
 
     def log_images(self, images: torch.Tensor, epoch: int) -> None:
         """Ghi ảnh mẫu (đã denormalize) lên TensorBoard.
@@ -1299,8 +1363,8 @@ class TensorBoardLogger:
         """
         if self.writer is None:
             return
-        mean = torch.tensor([0.485, 0.456, 0.406]).view(1, 3, 1, 1)
-        std = torch.tensor([0.229, 0.224, 0.225]).view(1, 3, 1, 1)
+        mean = torch.tensor(IMAGENET_MEAN).view(1, 3, 1, 1)
+        std = torch.tensor(IMAGENET_STD).view(1, 3, 1, 1)
         unnorm = images[:16].detach().cpu() * std + mean
         self.writer.add_images("samples/train_images", unnorm, epoch)
 
@@ -1310,32 +1374,23 @@ class TensorBoardLogger:
             self.writer.close()
 ```
 
-**Bảng tag TensorBoard** (theo đề — monitor training process):
-
-| Tag | Loại | Ý nghĩa |
-|-----|------|---------|
-| `train/loss` | scalar | Loss tập train — giảm = học được |
-| `val/loss` | scalar | Loss tập validation — **tăng = overfit** |
-| `train/accuracy` | scalar | Accuracy train |
-| `val/accuracy` | scalar | Accuracy validation — **chính là metric chọn checkpoint** |
-| `lr` | scalar | Learning rate hiện tại |
-| `epoch/time_seconds` | scalar | Thời gian mỗi epoch |
-| `grad_norm/<layer>` | scalar | Độ lớn gradient — phát hiện gradient explosion |
-| `model/grad/<layer>` | histogram | Phân bố gradient |
-| `samples/train_images` | image | Ảnh mẫu sau transform (đã denormalize) |
-
-#### 2.5. CLI train + override hyperparameter
+#### 3.3.5. CLI train + override hyperparameter
 
 ```python
 # src/training/__main__.py
-"""CLI training: chạy 1 model, nhiều model, hoặc sweep siêu tham số."""
+"""CLI training: chạy 1 model, nhiều model, hoặc sweep siêu tham số.
+
+Chạy:
+    python -m src.training --config configs/train_config.yaml
+    python -m src.training --config configs/train_config.yaml --models resnet18 vgg11
+    python -m src.training --config configs/train_config.yaml --lr 1e-4 1e-3 --batch-size 32 64
+    python -m src.training --config configs/train_config.yaml --image-size 64 --epochs 3
+"""
 
 from __future__ import annotations
 
 import argparse
-import json
 import random
-from pathlib import Path
 
 import numpy as np
 import torch
@@ -1346,7 +1401,7 @@ from src.training.loss import build_criterion
 from src.training.optimizer import build_optimizer
 from src.training.scheduler import build_scheduler
 from src.training.tensorboard_utils import TensorBoardLogger
-from src.training.trainer import Trainer
+from src.training.trainer import TrainConfig, Trainer
 from src.utils.config import load_config
 from src.utils.runs import create_run_dir, setup_logging, write_json
 
@@ -1359,7 +1414,14 @@ def set_seed(seed: int) -> None:
 
 
 def resolve_device(spec: str) -> torch.device:
-    """Chọn thiết bị theo config."""
+    """Chọn thiết bị theo config.
+
+    Args:
+        spec: "auto" | "cpu" | "cuda".
+
+    Returns:
+        `torch.device`.
+    """
     if spec == "auto":
         return torch.device("cuda" if torch.cuda.is_available() else "cpu")
     return torch.device(spec)
@@ -1368,14 +1430,22 @@ def resolve_device(spec: str) -> torch.device:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Train CIFAR-10 classifier")
     parser.add_argument("--config", default="configs/train_config.yaml")
-    parser.add_argument("--models", nargs="+", default=None, help="Danh sách model cần chạy")
-    parser.add_argument("--strategy", default=None, choices=["freeze_backbone", "fine_tune"])
+    parser.add_argument("--models", nargs="+", default=None, help="Danh sách model")
+    parser.add_argument(
+        "--strategy",
+        default=None,
+        choices=["freeze_backbone", "fine_tune", "from_scratch"],
+    )
     parser.add_argument("--epochs", type=int, default=None)
     parser.add_argument("--lr", type=float, nargs="+", default=None)
     parser.add_argument("--batch-size", type=int, nargs="+", default=None)
-    parser.add_argument("--image-size", type=int, default=None, help="224 = Tier A, 64 = Tier B")
+    parser.add_argument(
+        "--image-size", type=int, default=None, help="224 = Tier A, 64 = Tier B"
+    )
     parser.add_argument("--optimizer", default=None, choices=["adam", "adamw", "sgd"])
-    parser.add_argument("--scheduler", default=None, choices=["none", "cosine", "step", "plateau"])
+    parser.add_argument(
+        "--scheduler", default=None, choices=["none", "cosine", "step", "plateau"]
+    )
     args = parser.parse_args(argv)
 
     raw = load_config(args.config)
@@ -1389,14 +1459,15 @@ def main(argv: list[str] | None = None) -> int:
 
     set_seed(int(section.get("seed", 42)))
     device = resolve_device(section.get("device", "auto"))
-    all_results = []
+    all_results: list[dict] = []
 
     for model_name in models:
         for lr in lrs:
             for batch_size in batch_sizes:
                 cfg = TrainConfig(
                     model=model_name,
-                    strategy=args.strategy or section.get("strategy", "freeze_backbone"),
+                    strategy=args.strategy
+                    or section.get("strategy", "freeze_backbone"),
                     freeze_until=int(section.get("freeze_until", 1)),
                     epochs=args.epochs or int(section.get("epochs", 5)),
                     batch_size=batch_size,
@@ -1408,8 +1479,11 @@ def main(argv: list[str] | None = None) -> int:
                     num_workers=int(section.get("num_workers", 4)),
                     seed=int(section.get("seed", 42)),
                     device=section.get("device", "auto"),
-                    image_size=args.image_size or int(section.get("image_size", 224)),
-                    early_stopping_patience=int(section.get("early_stopping_patience", 0)),
+                    image_size=args.image_size
+                    or int(section.get("image_size", 224)),
+                    early_stopping_patience=int(
+                        section.get("early_stopping_patience", 0)
+                    ),
                 )
 
                 # --- Data ---
@@ -1422,7 +1496,7 @@ def main(argv: list[str] | None = None) -> int:
                     augment=bool(data_section.get("augment", True)),
                     in_memory=bool(data_section.get("in_memory", True)),
                 )
-                train_loader, val_loader, test_loader = build_dataloaders(data_cfg)
+                train_loader, val_loader, _ = build_dataloaders(data_cfg)
 
                 # --- Model ---
                 run_dir = create_run_dir()
@@ -1434,6 +1508,7 @@ def main(argv: list[str] | None = None) -> int:
                         strategy=cfg.strategy,
                         weights=section.get("weights", "DEFAULT"),
                         freeze_until=cfg.freeze_until,
+                        freeze_head_full=bool(section.get("freeze_head_full", False)),
                     )
                 )
 
@@ -1449,8 +1524,14 @@ def main(argv: list[str] | None = None) -> int:
 
                 # --- Train ---
                 trainer = Trainer(
-                    model, train_loader, val_loader, criterion,
-                    optimizer, device, scheduler, run_dir,
+                    model,
+                    train_loader,
+                    val_loader,
+                    criterion,
+                    optimizer,
+                    device,
+                    scheduler,
+                    run_dir,
                 )
                 tb = TensorBoardLogger(run_dir, enabled=tb_section.get("enabled", True))
                 history = trainer.train(
@@ -1470,14 +1551,16 @@ def main(argv: list[str] | None = None) -> int:
                     "best_val_acc": trainer.best_val_acc,
                     "best_epoch": trainer.best_epoch,
                     "params": count_parameters(model),
+                    "history": history,
                     "run_dir": str(run_dir),
                 }
                 write_json(result, run_dir / "metrics.json")
                 all_results.append(result)
 
-    # Tổng hợp
+    # --- Tổng hợp ---
     summary_dir = create_run_dir()
     write_json(all_results, summary_dir / "sweep_results.json")
+
     print("\n=== TỔNG KẾT ===")
     for r in all_results:
         print(
@@ -1493,7 +1576,7 @@ if __name__ == "__main__":
     raise SystemExit(main())
 ```
 
-### Hyperparameter Search Space (đề bài: "Adjust the hyperparameters")
+### 3.4 Config + Search Space
 
 ```yaml
 # configs/train_config.yaml
@@ -1502,6 +1585,8 @@ train:
   model: resnet18
   strategy: freeze_backbone
   freeze_until: 1
+  freeze_head_full: false
+  weights: DEFAULT
 
   # Hyperparameters — đề bài yêu cầu "adjust hyperparameters"
   epochs: 5
@@ -1536,60 +1621,105 @@ search_space:
   scheduler: [none, cosine]
 ```
 
-### Requirements (theo đề)
+### 3.5 Requirements (theo đề)
 
-✅ **Define the loss function and optimizer**:
+✅ **O9 — Define the loss function and optimizer**:
 - `build_criterion()`: CrossEntropy (mặc định) + label smoothing
 - `build_optimizer()`: Adam / AdamW / SGD, **chỉ truyền params trainable**
 - `build_scheduler()`: cosine / step / plateau
 
-✅ **Write the training loop** — đủ 4 bước:
+✅ **O10 — Write the training loop** — đủ 4 bước:
 - **Forward**: `output = model(data)`
 - **Loss**: `loss = criterion(output, target)`
 - **Backward**: `loss.backward()`
 - **Optimize**: `optimizer.step()` (sau `optimizer.zero_grad()`)
 
-✅ **Use TensorBoard**:
+✅ **E3 — Use TensorBoard**:
 - Scalar: loss / accuracy (train + val) / lr / thời gian epoch
-- Histogram: gradient theo từng layer
+- Scalar theo layer: độ lớn gradient (phát hiện gradient explosion)
+- Histogram: phân bố trọng số
 - Image: ảnh mẫu đã denormalize
 - Checkpoint theo val accuracy + early stopping
 
-✅ **Adjust the hyperparameters**:
+✅ **E2 — Adjust the hyperparameters**:
 - Toàn bộ hyperparameter nằm trong `configs/train_config.yaml`
-- Override được từ CLI: `--lr`, `--batch-size`, `--optimizer`, `--scheduler`, `--epochs`
+- Override được từ CLI: `--lr`, `--batch-size`, `--optimizer`, `--scheduler`, `--epochs`, `--image-size`
 - Quét nhiều tổ hợp: `--lr 1e-4 1e-3 --batch-size 32 64`
 
-### Test
-- Train 1 epoch với model nhỏ + `FakeData` → verify loss giảm hoặc params đổi
-- Verify `.grad` của head khác `None`, `.grad` của backbone đã freeze là `None`
-- Verify `best.pt` được tạo khi val acc tăng
-- Verify load checkpoint → cùng output
-- Verify `metrics.json` có `best_val_acc`
-- Verify TensorBoard tạo file event, không raise khi log scalar/histogram/image
-- Verify early stopping kích hoạt đúng patience
+### 3.6 Bảng tag TensorBoard
+
+| Tag | Loại | Ý nghĩa |
+|-----|------|---------|
+| `train/loss` | scalar | Loss tập train — giảm = học được |
+| `val/loss` | scalar | Loss tập validation — **tăng = overfit** |
+| `train/accuracy` | scalar | Accuracy train |
+| `val/accuracy` | scalar | Accuracy validation — **chính là metric chọn checkpoint** |
+| `lr` | scalar | Learning rate hiện tại |
+| `epoch/time_seconds` | scalar | Thời gian mỗi epoch |
+| `grad_norm/<layer>` | scalar | Độ lớn gradient — phát hiện gradient explosion |
+| `model/weights/<layer>` | histogram | Phân bố trọng số |
+| `samples/train_images` | image | Ảnh mẫu sau transform (đã denormalize) |
+
+Xem log:
+```powershell
+.\.venv\Scripts\tensorboard.exe --logdir=results/runs
+# mở http://localhost:6006/
+```
+
+### 3.7 Test
+
+**`tests/unit/test_optimizer.py`** (12 test):
+
+| Test | Kiểm tra |
+|------|---------|
+| `test_cross_entropy_accepts_logits` | Nhận logits `(B,10)` |
+| `test_label_smoothing_works` | Không raise, loss hợp lệ |
+| `test_invalid_criterion_raises` | Tên sai → `ValueError` |
+| `test_optimizer_only_trainable_params` | `len(opt.param_groups[0]["params"])` = số param trainable |
+| `test_optimizer_empty_trainable_raises` | Model không có param trainable → `ValueError` |
+| `test_sgd_momentum_set` | `momentum == 0.9` |
+| `test_learning_rate_applied` | `lr` đúng giá trị truyền vào |
+| `test_invalid_optimizer_raises` | Tên sai → `ValueError` |
+| `test_cosine_lr_decreases` | LR giảm sau mỗi step |
+| `test_step_lr_decreases_at_boundary` | Giảm đúng mốc |
+| `test_scheduler_none_returns_none` | `name="none"` → None |
+| `test_invalid_scheduler_raises` | Tên sai → `ValueError` |
+
+**`tests/unit/test_tensorboard_utils.py`** (5 test):
+- `SummaryWriter` tạo file event trong thư mục đích
+- `log_scalars` không raise
+- `log_weight_histograms` không raise
+- `log_images` không raise
+- Tag đúng tên quy ước (`train/loss`, `val/accuracy`...)
+
+**`tests/integration/test_training_loop.py`** (7 test):
+
+| Test | Kiểm tra |
+|------|---------|
+| `test_one_epoch_runs_and_updates_weights` | Loss giảm hoặc params đổi |
+| `test_gradients_flow_to_head` | Head có `.grad` khác `None` |
+| `test_frozen_backbone_no_gradients` | Backbone `.grad` là `None` |
+| `test_checkpoint_saved_on_best_val` | File `best.pt` tồn tại |
+| `test_checkpoint_reload_same_output` | Load lại cho output giống |
+| `test_metrics_json_written` | `metrics.json` có `best_val_acc` + `history` |
+| `test_early_stopping_triggers` | Patience = 1 → dừng sớm |
 
 > **Test nhanh:** dùng `FakeData` + model nhỏ, `epochs=1`, `batch_size=4` → mỗi test < 5 giây.
 
-### Input từ Người 1
-- Tên model + strategy tốt nhất (VD: `resnet18` + `freeze_backbone`)
-- `configs/model_config.yaml` hoàn chỉnh
-- Bảng params để so sánh
-
-### Output cho Người 3
+### 3.8 Output cho M4
 - **Checkpoint**: `results/runs/<ts>/checkpoints/best.pt`
 - **Training history**: `results/runs/<ts>/metrics.json` (train/val loss + acc mỗi epoch)
 - **TensorBoard logs**: `results/runs/<ts>/tb/`
 - **Kết quả sweep**: `results/runs/<ts>/sweep_results.json`
+- **Thông tin config** để M4 dựng lại đúng model (tên, strategy, image_size)
 
-### Report cần viết (lưu vào `docs/reports/nguoi2_training_report.md`)
+### 3.9 Report (lưu vào `docs/reports/m3_training_report.md`)
 
 ```markdown
-# Training Report
+# M3 — Training Report
 
 ## 1. Training Configuration
-- Model: ... | Strategy: ...
-- Image size (Tier): ... (224 = Tier A / 64 = Tier B)
+- Model: ... | Strategy: ... | Image size (Tier): ... (224 = Tier A / 64 = Tier B)
 - Batch size: ... | Learning rate: ... | Optimizer: ... | Scheduler: ...
 - Loss: ... | Epochs: ...
 
@@ -1621,14 +1751,16 @@ search_space:
 
 ---
 
-## 👤 NGƯỜI 3: Evaluation & Metrics
+# M4 — EVALUATION & METRICS
 
-### Nhiệm vụ (theo đề)
+> Phủ: **O11**
+
+### 4.1 Nhiệm vụ (theo đề)
 1. **Evaluate the Model** — đánh giá hiệu năng trên test set
 2. Báo cáo metrics đầy đủ (accuracy, precision, recall, F1, confusion matrix)
 3. Trực quan hoá kết quả
 
-### File cần tạo/sửa
+### 4.2 File cần tạo/sửa
 
 | File | Chức năng | Trạng thái |
 |------|-----------|------------|
@@ -1641,13 +1773,17 @@ search_space:
 | `tests/unit/test_metrics.py` | Unit test các công thức metrics | Tạo mới |
 | `tests/integration/test_evaluation.py` | Integration test đánh giá end-to-end | Tạo mới |
 
-### Chi tiết implementation
+### 4.3 Chi tiết implementation
 
-#### 3.1. Metrics
+#### 4.3.1. Metrics
 
 ```python
 # src/evaluation/metrics.py
-"""Các chỉ số đánh giá — tự tính bằng torch thuần."""
+"""Các chỉ số đánh giá — tự tính bằng torch thuần.
+
+Không thêm scikit-learn: chỉ để tính F1 mà thêm dependency là không đáng,
+và giữ requirements.txt gọn.
+"""
 
 from __future__ import annotations
 
@@ -1663,6 +1799,9 @@ def accuracy(pred: torch.Tensor, target: torch.Tensor) -> float:
 
     Returns:
         Accuracy trong khoảng [0, 1].
+
+    Raises:
+        ValueError: Nếu input rỗng.
     """
     if pred.numel() == 0:
         raise ValueError("Input rỗng — không thể tính accuracy")
@@ -1684,7 +1823,7 @@ def confusion_matrix(
         bị dự đoán sai thành `j`.
 
     Raises:
-        ValueError: Nếu nhãn nằm ngoài `[0, num_classes)`.
+        ValueError: Nếu input rỗng hoặc nhãn ngoài `[0, num_classes)`.
     """
     if pred.numel() == 0:
         raise ValueError("Input rỗng — không thể tính confusion matrix")
@@ -1754,9 +1893,7 @@ def macro_f1(pred: torch.Tensor, target: torch.Tensor, num_classes: int) -> floa
     return sum(v["f1"] for v in per_class.values()) / num_classes
 ```
 
-> **Quyết định:** tự tính bằng `torch` thuần thay vì thêm `scikit-learn`. Thêm dependency chỉ để tính F1 là không đáng, và giữ `requirements.txt` gọn. (Khác với plan mẫu FashionMNIST dùng `sklearn` — project này đã cài `torch` + `torchvision` + `tensorboard` + `matplotlib` + `numpy` + `pyyaml`.)
-
-#### 3.2. Evaluator
+#### 4.3.2. Evaluator
 
 ```python
 # src/evaluation/evaluator.py
@@ -1827,11 +1964,37 @@ class ModelEvaluator:
             all_labels.append(target.cpu())
             all_probs.append(probs.cpu())
 
-        return (
-            torch.cat(all_preds),
-            torch.cat(all_labels),
-            torch.cat(all_probs),
-        )
+        return torch.cat(all_preds), torch.cat(all_labels), torch.cat(all_probs)
+
+    @torch.no_grad()
+    def collect_errors(self, max_samples: int = 12) -> list[dict]:
+        """Thu thập các mẫu model đoán sai (kèm ảnh) để vẽ biểu đồ.
+
+        Args:
+            max_samples: Số mẫu tối đa.
+
+        Returns:
+            Danh sách dict `{image, true, pred}`.
+        """
+        errors: list[dict] = []
+        for data, target in self.test_loader:
+            data = data.to(self.device)
+            output = self.model(data)
+            _, predicted = output.max(1)
+            predicted = predicted.cpu()
+
+            wrong = (predicted != target).nonzero(as_tuple=True)[0]
+            for idx in wrong.tolist():
+                errors.append(
+                    {
+                        "image": data[idx].cpu(),
+                        "true": int(target[idx]),
+                        "pred": int(predicted[idx]),
+                    }
+                )
+                if len(errors) >= max_samples:
+                    return errors
+        return errors
 
     def evaluate(self) -> dict:
         """Đánh giá đầy đủ.
@@ -1847,10 +2010,7 @@ class ModelEvaluator:
 
         num_classes = len(self.class_names)
         per_class = per_class_metrics(preds, labels, num_classes)
-        # Đổi key từ index sang tên lớp cho dễ đọc
-        named = {
-            self.class_names[int(k)]: v for k, v in per_class.items()
-        }
+        named = {self.class_names[int(k)]: v for k, v in per_class.items()}
 
         return {
             "accuracy": accuracy(preds, labels),
@@ -1862,7 +2022,7 @@ class ModelEvaluator:
         }
 ```
 
-#### 3.3. Visualize
+#### 4.3.3. Visualize
 
 ```python
 # src/evaluation/visualize.py
@@ -1876,8 +2036,11 @@ import matplotlib
 import numpy as np
 import torch
 
-matplotlib.use("Agg")  # headless — không mở cửa sổ
+matplotlib.use("Agg")  # headless — không mở cửa sổ khi chạy trên server/CI
 import matplotlib.pyplot as plt  # noqa: E402
+
+IMAGENET_MEAN = (0.485, 0.456, 0.406)
+IMAGENET_STD = (0.229, 0.224, 0.225)
 
 
 def plot_confusion_matrix(
@@ -1929,10 +2092,8 @@ def plot_confusion_matrix(
     if save_path:
         Path(save_path).parent.mkdir(parents=True, exist_ok=True)
         fig.savefig(save_path, dpi=120, bbox_inches="tight")
-        plt.close(fig)
-        return Path(save_path)
     plt.close(fig)
-    return None
+    return Path(save_path) if save_path else None
 
 
 def plot_per_class_f1(
@@ -1952,7 +2113,10 @@ def plot_per_class_f1(
     f1s = [per_class[n]["f1"] for n in names]
 
     fig, ax = plt.subplots(figsize=(10, 6))
-    colors = ["#2ecc71" if f >= 0.8 else "#e67e22" if f >= 0.5 else "#e74c3c" for f in f1s]
+    colors = [
+        "#2ecc71" if f >= 0.8 else "#e67e22" if f >= 0.5 else "#e74c3c"
+        for f in f1s
+    ]
     ax.bar(names, f1s, color=colors)
     ax.set_ylabel("F1 Score")
     ax.set_title("Per-Class F1 Score")
@@ -1967,54 +2131,47 @@ def plot_per_class_f1(
     if save_path:
         Path(save_path).parent.mkdir(parents=True, exist_ok=True)
         fig.savefig(save_path, dpi=120, bbox_inches="tight")
-        plt.close(fig)
-        return Path(save_path)
     plt.close(fig)
-    return None
+    return Path(save_path) if save_path else None
 
 
 def plot_misclassified(
-    images: torch.Tensor,
-    true_labels: torch.Tensor,
-    pred_labels: torch.Tensor,
+    errors: list[dict],
     class_names: list[str],
     save_path: Path | None = None,
-    max_samples: int = 12,
 ) -> Path | None:
     """Vẽ grid các ảnh model đoán sai.
 
     Args:
-        images: Tensor `(N, 3, H, W)` đã normalize.
-        true_labels: Nhãn thật `(N,)`.
-        pred_labels: Nhãn dự đoán `(N,)`.
+        errors: Danh sách dict `{image, true, pred}` từ
+            `ModelEvaluator.collect_errors()`.
         class_names: Tên lớp.
         save_path: Đường dẫn lưu ảnh.
-        max_samples: Số ảnh tối đa.
 
     Returns:
         Path file đã lưu nếu có `save_path`.
     """
-    wrong = (true_labels != pred_labels).nonzero(as_tuple=True)[0][:max_samples]
-    if wrong.numel() == 0:
+    if not errors:
         return None
 
-    mean = torch.tensor([0.485, 0.456, 0.406]).view(1, 3, 1, 1)
-    std = torch.tensor([0.229, 0.224, 0.225]).view(1, 3, 1, 1)
+    mean = torch.tensor(IMAGENET_MEAN).view(1, 3, 1, 1)
+    std = torch.tensor(IMAGENET_STD).view(1, 3, 1, 1)
 
-    n = len(wrong)
+    n = len(errors)
     cols = min(4, n)
     rows = (n + cols - 1) // cols
     fig, axes = plt.subplots(rows, cols, figsize=(3 * cols, 3.2 * rows))
     axes = np.array(axes).flatten()
 
-    for ax_idx, idx in enumerate(wrong):
-        img = (images[idx].detach().cpu() * std + mean).clamp(0, 1)
+    for ax_idx, err in enumerate(errors):
+        img = (err["image"].detach().cpu() * std + mean).clamp(0, 1)
         ax = axes[ax_idx]
         ax.imshow(img.permute(1, 2, 0).numpy())
         ax.set_title(
-            f"True: {class_names[true_labels[idx]]}\n"
-            f"Pred: {class_names[pred_labels[idx]]}",
-            fontsize=8, color="red",
+            f"True: {class_names[err['true']]}\n"
+            f"Pred: {class_names[err['pred']]}",
+            fontsize=8,
+            color="red",
         )
         ax.axis("off")
 
@@ -2027,10 +2184,8 @@ def plot_misclassified(
     if save_path:
         Path(save_path).parent.mkdir(parents=True, exist_ok=True)
         fig.savefig(save_path, dpi=120, bbox_inches="tight")
-        plt.close(fig)
-        return Path(save_path)
     plt.close(fig)
-    return None
+    return Path(save_path) if save_path else None
 
 
 def plot_train_curves(
@@ -2068,17 +2223,20 @@ def plot_train_curves(
     if save_path:
         Path(save_path).parent.mkdir(parents=True, exist_ok=True)
         fig.savefig(save_path, dpi=120, bbox_inches="tight")
-        plt.close(fig)
-        return Path(save_path)
     plt.close(fig)
-    return None
+    return Path(save_path) if save_path else None
 ```
 
-#### 3.4. CLI đánh giá
+#### 4.3.4. CLI đánh giá
 
 ```python
 # src/evaluation/__main__.py
-"""CLI đánh giá model trên test set."""
+"""CLI đánh giá model trên test set.
+
+Chạy:
+    python -m src.evaluation --config configs/eval_config.yaml \
+        --checkpoint results/runs/<ts>/checkpoints/best.pt
+"""
 
 from __future__ import annotations
 
@@ -2132,7 +2290,12 @@ def main(argv: list[str] | None = None) -> int:
 
     # --- Model ---
     model = build_model(
-        ModelConfig(name=model_name, num_classes=10, strategy=strategy, weights="DEFAULT")
+        ModelConfig(
+            name=model_name,
+            num_classes=10,
+            strategy=strategy,
+            weights=section.get("weights", "DEFAULT"),
+        )
     )
     checkpoint = torch.load(ckpt_path, map_location="cpu")
     model.load_state_dict(checkpoint["model_state_dict"])
@@ -2140,7 +2303,9 @@ def main(argv: list[str] | None = None) -> int:
     # --- Evaluate ---
     run_dir = create_run_dir()
     setup_logging(run_dir)
-    evaluator = ModelEvaluator(model, test_loader, device="cpu", class_names=CIFAR10_CLASSES)
+    evaluator = ModelEvaluator(
+        model, test_loader, device="cpu", class_names=CIFAR10_CLASSES
+    )
     metrics = evaluator.evaluate()
 
     print(f"Test Accuracy : {metrics['accuracy'] * 100:.2f}%")
@@ -2164,8 +2329,12 @@ def main(argv: list[str] | None = None) -> int:
 
     # --- Plots ---
     plots_dir = run_dir / "plots"
-    plot_confusion_matrix(metrics["confusion_matrix"], CIFAR10_CLASSES, plots_dir / "confusion_matrix.png")
+    plot_confusion_matrix(
+        metrics["confusion_matrix"], CIFAR10_CLASSES, plots_dir / "confusion_matrix.png"
+    )
     plot_per_class_f1(metrics["per_class"], plots_dir / "per_class_f1.png")
+    errors = evaluator.collect_errors(max_samples=12)
+    plot_misclassified(errors, CIFAR10_CLASSES, plots_dir / "misclassified.png")
     if checkpoint.get("history"):
         plot_train_curves(checkpoint["history"], plots_dir / "train_curves.png")
 
@@ -2177,9 +2346,59 @@ if __name__ == "__main__":
     raise SystemExit(main())
 ```
 
-### Requirements (theo đề)
+### 4.4 Config
 
-✅ **Evaluate the Model** trên test dataset:
+```yaml
+# configs/eval_config.yaml
+evaluation:
+  # Đường dẫn checkpoint từ M3
+  checkpoint: results/runs/20261025-150847/checkpoints/best.pt
+
+  # Phải khớp với config M3 đã dùng để train
+  model: resnet18
+  strategy: freeze_backbone
+  weights: DEFAULT
+
+  # Phải khớp với lúc train (224 = Tier A, 64 = Tier B)
+  image_size: 224
+
+  batch_size: 64
+  num_workers: 4
+  device: cpu
+  save_plots: true
+  top_k_errors: 12
+```
+
+### 4.5 Schema `metrics.json` (chuẩn hoá cho M5)
+
+```json
+{
+  "model": "resnet18",
+  "strategy": "freeze_backbone",
+  "image_size": 224,
+  "checkpoint": "results/runs/<ts>/checkpoints/best.pt",
+  "test": {
+    "accuracy": 0.0,
+    "macro_f1": 0.0,
+    "per_class": {
+      "airplane": {"precision": 0.0, "recall": 0.0, "f1": 0.0, "support": 1000}
+    },
+    "confusion_matrix": [[0]],
+    "inference_time_ms_per_sample": 0.0,
+    "num_samples": 10000
+  },
+  "train_summary": {
+    "best_val_accuracy": 0.0,
+    "best_epoch": 0
+  }
+}
+```
+
+> **Cùng schema cho mọi run** → M5 chỉ cần đọc `metrics.json` ra bảng so sánh.
+
+### 4.6 Requirements (theo đề)
+
+✅ **O11 — Evaluate the Model** trên test dataset:
 - Accuracy tổng thể
 - Macro-F1 (metric chính — dataset cân bằng 1000 mẫu/lớp)
 - Per-class precision / recall / F1 / support
@@ -2187,36 +2406,50 @@ if __name__ == "__main__":
 - Inference time ms/sample
 
 ✅ **Sinh báo cáo + biểu đồ**:
-- `metrics.json` theo schema thống nhất cho mọi run → M5 tổng hợp được
+- `metrics.json` theo schema thống nhất cho mọi run
 - Heatmap confusion matrix
 - Bar chart F1 mỗi lớp
 - Grid ảnh đoán sai
 - Đường loss/accuracy vẽ lại từ history
 
-### Test
-- `accuracy` với dự đoán đúng hết → 1.0; sai hết → 0.0
-- `macro_f1` đối chiếu với giá trị tính tay
-- `confusion_matrix`: tổng mọi ô = số mẫu; tổng mỗi hàng = support của lớp đó
-- Nhãn ngoài `[0, 10)` → `ValueError`
-- Input rỗng → `ValueError`
-- Evaluate end-to-end với model giả → `metrics.json` đủ key
-- Load lại checkpoint → cùng accuracy
+### 4.7 Test
 
-### Input từ Người 2
-- **Checkpoint**: `results/runs/<ts>/checkpoints/best.pt`
-- **Training history**: `results/runs/<ts>/metrics.json`
-- **Thông tin config** để dựng lại đúng model (tên, strategy, image_size)
+**`tests/unit/test_metrics.py`** (12 test):
 
-### Output (Final Deliverables theo đề)
+| Test | Kiểm tra |
+|------|---------|
+| `test_accuracy_perfect` | Dự đoán đúng hết → 1.0 |
+| `test_accuracy_wrong` | Dự đoán sai hết → 0.0 |
+| `test_accuracy_half` | Đúng một nửa → 0.5 |
+| `test_macro_f1_perfect` | → 1.0 |
+| `test_macro_f1_hand_computed` | So với giá trị tính tay |
+| `test_confusion_matrix_diagonal` | Dự đoán đúng → đường chéo = số lượng |
+| `test_confusion_matrix_off_diagonal` | Sai lẫn lộn → đúng ô sai |
+| `test_confusion_matrix_shape` | → `(10,10)` |
+| `test_confusion_matrix_rows_sum` | Tổng mỗi hàng = số mẫu của lớp đó |
+| `test_per_class_support_sums` | Tổng support = số mẫu |
+| `test_metrics_empty_input_raises` | Input rỗng → `ValueError` |
+| `test_label_out_of_range_raises` | Nhãn ≥ n_classes → lỗi rõ ràng |
+
+**`tests/integration/test_evaluation.py`** (5 test):
+
+| Test | Kiểm tra |
+|------|---------|
+| `test_evaluate_model_end_to_end` | Model giả + loader giả → metrics dict đầy đủ |
+| `test_metrics_json_schema` | Đủ key theo §4.5 |
+| `test_plots_generated` | Tạo đủ file PNG |
+| `test_checkpoint_reload_consistency` | Đánh giá lại checkpoint → cùng accuracy |
+| `test_confusion_matrix_sum_equals_samples` | Tổng ma trận = số mẫu test |
+
+### 4.8 Output (Final Deliverables theo đề)
 - ✅ **Python code**
-- ⏳ **Brief report** (3 reports + 1 final report)
-- ⏳ **Evaluation report** (`docs/reports/nguoi3_evaluation_report.md`)
+- ⏳ **Brief report** (`docs/reports/m4_evaluation_report.md`)
 - ⏳ **Confusion matrix + biểu đồ** (`results/runs/<ts>/plots/`)
 
-### Report cần viết (lưu vào `docs/reports/nguoi3_evaluation_report.md`)
+### 4.9 Report (lưu vào `docs/reports/m4_evaluation_report.md`)
 
 ```markdown
-# Evaluation Report
+# M4 — Evaluation Report
 
 ## 1. Test Set Configuration
 - Checkpoint: ... | Model: ... | Strategy: ...
@@ -2255,32 +2488,32 @@ if __name__ == "__main__":
 
 ## 📋 FILES SUMMARY
 
-### Theo người phụ trách
+### Theo module
 
-| Người | Module (theo đề) | File chính | File phụ |
-|-------|------------------|------------|----------|
-| 1 | Load + Adapt Pre-trained Model | `factory.py`, `registry.py` | `__main__.py`, `model_config.yaml`, `test_factory.py`, `test_model_pipeline.py` |
-| 2 | Training Loop + TensorBoard + Hyperparams | `trainer.py`, `tensorboard_utils.py` | `loss.py`, `optimizer.py`, `scheduler.py`, `__main__.py`, `train_config.yaml` |
-| 3 | Evaluate + Metrics + Plots | `metrics.py`, `evaluator.py`, `visualize.py` | `__main__.py`, `eval_config.yaml`, `test_metrics.py`, `test_evaluation.py` |
+| Module | Yêu cầu đề | File chính | File phụ |
+|--------|-----------|------------|----------|
+| **M2** | E1, O1–O5 | `factory.py`, `registry.py` | `__main__.py`, `model_config.yaml`, `test_factory.py`, `test_model_pipeline.py` |
+| **M3** | E2, E3, O9, O10 | `trainer.py`, `tensorboard_utils.py` | `loss.py`, `optimizer.py`, `scheduler.py`, `__main__.py`, `train_config.yaml` |
+| **M4** | O11 | `metrics.py`, `evaluator.py`, `visualize.py` | `__main__.py`, `eval_config.yaml`, `test_metrics.py`, `test_evaluation.py` |
 
 ### Mapping files với yêu cầu đề
 
-| Yêu cầu đề | Người | File |
-|------------|-------|------|
-| Load CIFAR-10 dataset | (Phase 1) | `src/data/dataset.py` ✅ |
-| Apply transforms | (Phase 1) | `src/data/transforms.py` ✅ |
-| Use DataLoader to create batches | (Phase 1) | `src/data/dataloader.py` ✅ |
-| **Load a Pre-trained Model** | **Người 1** | `src/models/factory.py`, `src/models/registry.py` |
-| **Explore the Model Architecture** | **Người 1** | `src/models/factory.py` (`describe_model`), `src/models/__main__.py` |
-| **Adapt the Model for a Specific Task** | **Người 1** | `src/models/factory.py` (`replace_head`) |
-| **Freeze earlier layers** | **Người 1** | `src/models/factory.py` (`freeze_backbone`) |
-| **Unfreeze final layers** | **Người 1** | `src/models/factory.py` (`unfreeze_last`) |
-| **Experiment with different pre-trained models** | **Người 1** | `configs/model_config.yaml` + CLI `--models` |
-| **Define the loss function and optimizer** | **Người 2** | `src/training/loss.py`, `src/training/optimizer.py` |
-| **Write the training loop** | **Người 2** | `src/training/trainer.py` |
-| **Use TensorBoard to monitor** | **Người 2** | `src/training/tensorboard_utils.py` |
-| **Adjust the hyperparameters** | **Người 2** | `configs/train_config.yaml` + CLI override |
-| **Evaluate the Model** | **Người 3** | `src/evaluation/evaluator.py`, `src/evaluation/metrics.py` |
+| Yêu cầu đề | Module | File |
+|------------|--------|------|
+| Load CIFAR-10 dataset | M1 | `src/data/dataset.py` ✅ |
+| Apply transforms | M1 | `src/data/transforms.py` ✅ |
+| Use DataLoader to create batches | M1 | `src/data/dataloader.py` ✅ |
+| **Load a Pre-trained Model** | **M2** | `src/models/factory.py`, `src/models/registry.py` |
+| **Explore the Model Architecture** | **M2** | `src/models/factory.py` (`describe_model`), `src/models/__main__.py` |
+| **Adapt the Model for a Specific Task** | **M2** | `src/models/factory.py` (`replace_head`) |
+| **Freeze earlier layers** | **M2** | `src/models/factory.py` (`freeze_backbone`) |
+| **Unfreeze final layers** | **M2** | `src/models/factory.py` (`unfreeze_last`) |
+| **Experiment with different pre-trained models** | **M2** | `configs/model_config.yaml` + CLI `--models` |
+| **Define the loss function and optimizer** | **M3** | `src/training/loss.py`, `src/training/optimizer.py` |
+| **Write the training loop** | **M3** | `src/training/trainer.py` |
+| **Use TensorBoard to monitor** | **M3** | `src/training/tensorboard_utils.py` |
+| **Adjust the hyperparameters** | **M3** | `configs/train_config.yaml` + CLI override |
+| **Evaluate the Model** | **M4** | `src/evaluation/evaluator.py`, `src/evaluation/metrics.py` |
 
 ---
 
@@ -2288,7 +2521,7 @@ if __name__ == "__main__":
 
 ```
 src/
-├── data/                              # Phase 1 ✅
+├── data/                              # M1 ✅
 │   ├── __init__.py
 │   ├── dataset.py                     # Cifar10Dataset ✅
 │   ├── transforms.py                  # build_transform() ✅
@@ -2297,13 +2530,13 @@ src/
 │   ├── prepare.py                     # export processed/splits ✅
 │   └── __main__.py                    # CLI data ✅
 │
-├── models/                            # 👤 Người 1
+├── models/                            # M2
 │   ├── __init__.py
-│   ├── registry.py                    # BACKBONE_REGISTRY, HEAD_SPECS
+│   ├── registry.py                    # BACKBONE_REGISTRY, block_units
 │   ├── factory.py                     # build_model, replace_head, freeze/unfreeze
 │   └── __main__.py                    # CLI khám phá architecture
 │
-├── training/                          # 👤 Người 2
+├── training/                          # M3
 │   ├── __init__.py
 │   ├── loss.py                        # build_criterion
 │   ├── optimizer.py                   # build_optimizer
@@ -2312,45 +2545,47 @@ src/
 │   ├── tensorboard_utils.py           # TensorBoardLogger
 │   └── __main__.py                    # CLI train + sweep
 │
-├── evaluation/                        # 👤 Người 3
+├── evaluation/                        # M4
 │   ├── __init__.py
 │   ├── metrics.py                     # accuracy, macro_f1, per_class, confusion_matrix
 │   ├── evaluator.py                   # ModelEvaluator
 │   ├── visualize.py                   # confusion matrix, F1 bar, misclassified
 │   └── __main__.py                    # CLI evaluate
 │
-└── utils/                             # ✅ (Phase 1)
+└── utils/                             # ✅ (M1)
     ├── config.py                      # load_config, deep_merge, project_root
     └── runs.py                        # create_run_dir, setup_logging, write_json
 
 configs/
-├── data_config.yaml                   # ✅ (Phase 1)
-├── model_config.yaml                  # 👤 Người 1
-├── train_config.yaml                  # 👤 Người 2
-└── eval_config.yaml                   # 👤 Người 3
+├── data_config.yaml                   # ✅ (M1)
+├── model_config.yaml                  # M2
+├── train_config.yaml                  # M3
+└── eval_config.yaml                   # M4
 
 docs/
-├── data-flow.md                       # ✅ (Phase 1)
+├── data-flow.md                       # ✅ (M1)
 ├── architecture.md                    # Tạo ở M2
+├── plan-m2-m4.md                      # Tóm tắt + phân tích thời gian train
+├── PHASE2_PLAN.md                     # File này
 └── reports/
-    ├── nguoi1_models_report.md        # 👤 Người 1
-    ├── nguoi2_training_report.md      # 👤 Người 2
-    └── nguoi3_evaluation_report.md    # 👤 Người 3
+    ├── m2_models_report.md            # M2
+    ├── m3_training_report.md          # M3
+    └── m4_evaluation_report.md        # M4
 
 tests/
 ├── unit/
-│   ├── test_dataset.py                # ✅
-│   ├── test_transforms.py             # ✅
-│   ├── test_split.py                  # ✅
-│   ├── test_prepare.py                # ✅
-│   ├── test_factory.py                # 👤 Người 1
-│   ├── test_optimizer.py              # 👤 Người 2
-│   └── test_metrics.py                # 👤 Người 3
+│   ├── test_dataset.py                # ✅ M1
+│   ├── test_transforms.py             # ✅ M1
+│   ├── test_split.py                  # ✅ M1
+│   ├── test_prepare.py                # ✅ M1
+│   ├── test_factory.py                # M2
+│   ├── test_optimizer.py              # M3
+│   └── test_metrics.py                # M4
 └── integration/
-    ├── test_dataloader_pipeline.py    # ✅
-    ├── test_model_pipeline.py         # 👤 Người 1
-    ├── test_training_loop.py          # 👤 Người 2
-    └── test_evaluation.py             # 👤 Người 3
+    ├── test_dataloader_pipeline.py    # ✅ M1
+    ├── test_model_pipeline.py         # M2
+    ├── test_training_loop.py          # M3
+    └── test_evaluation.py             # M4
 
 results/runs/
 └── <timestamp>/                       # Mỗi run 1 folder
@@ -2359,23 +2594,24 @@ results/runs/
     ├── metrics.json                   # Metrics (schema thống nhất)
     ├── model_info.json                # Tham số model (M2)
     ├── sweep_results.json             # Tổng hợp sweep (M3)
-    ├── tb/                            # TensorBoard event files
+    ├── tb/                            # TensorBoard event files (M3)
     ├── checkpoints/
-    │   └── best.pt                    # Checkpoint theo val accuracy
+    │   └── best.pt                    # Checkpoint theo val accuracy (M3)
     └── plots/
-        ├── confusion_matrix.png       # 👤 Người 3
-        ├── per_class_f1.png           # 👤 Người 3
-        ├── misclassified.png          # 👤 Người 3
-        └── train_curves.png           # 👤 Người 3
+        ├── confusion_matrix.png       # M4
+        ├── per_class_f1.png           # M4
+        ├── misclassified.png          # M4
+        └── train_curves.png           # M4
 ```
 
 ---
 
 ## ✅ CHECKLIST HOÀN THÀNH (theo đề)
 
-### 👤 Người 1: Model Factory
+### M2 — Model Factory
 - [ ] `src/models/registry.py` tạo xong (3 backbone + block_units đã introspect)
 - [ ] `src/models/factory.py` tạo xong
+- [ ] `src/models/__init__.py` export public API
 - [ ] `src/models/__main__.py` tạo xong
 - [ ] `configs/model_config.yaml` tạo xong
 - [ ] Forward pass test passed với 3 architectures → output `(1, 10)`
@@ -2384,40 +2620,41 @@ results/runs/
 - [ ] Freeze test passed — verify % params trainable < 1% cho cả 3 model
 - [ ] **VGG11: `freeze_head_full: false` — verify chỉ 40,970 params trainable**
 - [ ] Fine-tune test passed — verify block cuối có gradient
-- [ ] `docs/reports/nguoi1_models_report.md` viết xong
+- [ ] `docs/reports/m2_models_report.md` viết xong
 
-### 👤 Người 2: Training Loop + TensorBoard
+### M3 — Training Loop + TensorBoard
 - [ ] `src/training/loss.py` tạo xong
 - [ ] `src/training/optimizer.py` tạo xong (chỉ params trainable)
 - [ ] `src/training/scheduler.py` tạo xong
 - [ ] `src/training/trainer.py` tạo xong (forward, loss, backward, optimize)
 - [ ] `src/training/tensorboard_utils.py` tạo xong
+- [ ] `src/training/__init__.py` export public API
 - [ ] `src/training/__main__.py` tạo xong (override hyperparameter + multi-model)
 - [ ] `configs/train_config.yaml` tạo xong
 - [ ] Training loop test passed — loss giảm
 - [ ] **TensorBoard log đầy đủ** (`results/runs/<ts>/tb/`)
 - [ ] **Checkpoint lưu theo val accuracy** (`results/runs/<ts>/checkpoints/best.pt`)
 - [ ] Hyperparameter sweep chạy được (Tier B, 64×64)
-- [ ] `docs/reports/nguoi2_training_report.md` viết xong
+- [ ] `docs/reports/m3_training_report.md` viết xong
 
-### 👤 Người 3: Evaluation + Metrics
+### M4 — Evaluation + Metrics
 - [ ] `src/evaluation/metrics.py` tạo xong
 - [ ] `src/evaluation/evaluator.py` tạo xong
 - [ ] `src/evaluation/visualize.py` tạo xong
+- [ ] `src/evaluation/__init__.py` export public API
 - [ ] `src/evaluation/__main__.py` tạo xong
 - [ ] `configs/eval_config.yaml` tạo xong
 - [ ] Test accuracy + macro-F1 đúng (đối chiếu giá trị tính tay)
 - [ ] Confusion matrix tổng = số mẫu test
 - [ ] **Biểu đồ sinh đủ** (`plots/confusion_matrix.png`, `plots/per_class_f1.png`)
 - [ ] **Ảnh đoán sai** (`plots/misclassified.png`)
-- [ ] `docs/reports/nguoi3_evaluation_report.md` viết xong
+- [ ] `docs/reports/m4_evaluation_report.md` viết xong
 
 ### 📦 Final Deliverables (theo đề)
 - [ ] Python code hoàn chỉnh
-- [ ] 3 reports từ 3 người
+- [ ] 3 report theo module
 - [ ] TensorBoard logs (`results/runs/<ts>/tb/`)
 - [ ] Biểu đồ đánh giá (`results/runs/<ts>/plots/`)
-- [ ] `docs/PHASE2_FINAL_REPORT.md` (tổng hợp)
 
 ---
 
@@ -2425,10 +2662,9 @@ results/runs/
 
 ### Optional Enhancements
 1. **Data Augmentation** — đã có sẵn trong M1 (`RandomCrop` + `HorizontalFlip`); có thể thêm `ColorJitter`/`RandomAffine` ở Tier A
-2. **GradCAM** — Người 3 có thể thêm visualization cho quyết định của model
-3. **Mixed precision / gradient accumulation** — không cần trên CPU
-4. **Learning rate finder** — Người 2 có thể thêm để chọn `lr` tự động
-5. **Unit Tests** — mỗi người tự viết test theo checklist
+2. **GradCAM** — M4 có thể thêm visualization cho quyết định của model
+3. **Learning rate finder** — M3 có thể thêm để chọn `lr` tự động
+4. **Mixed precision / gradient accumulation** — không cần trên CPU
 
 ### Integration Test
 - Chạy full pipeline: Load data → Build model → Train → Evaluate → Save/Load
@@ -2444,11 +2680,11 @@ Tạo `docs/PHASE2_FINAL_REPORT.md`:
 
 ---
 
-## 📞 WORKFLOW GIỮA 3 NGƯỜI
+## 📞 WORKFLOW GIỮA CÁC MODULE
 
 ```
-Người 1 (Model)                Người 2 (Training)              Người 3 (Evaluation)
-─────────────────              ─────────────────                ─────────────────
+M2 (Model Factory)             M3 (Training)                M4 (Evaluation)
+─────────────────             ──────────────                ───────────────
 1. Registry 3 backbone
 2. replace_head (Linear +
    Sequential — VGG11)
@@ -2470,29 +2706,29 @@ Người 1 (Model)                Người 2 (Training)              Người 3 
                                   ←───────────────────────────────── 15. Final report
 ```
 
-### Giao tiếp giữa các người
+### Giao tiếp giữa các module
 
 | Từ | Đến | Giao |
 |----|-----|------|
-| Người 1 | Người 2 | Tên model + strategy tốt nhất, `model_config.yaml`, bảng params |
-| Người 2 | Người 3 | Checkpoint `best.pt`, training history, image_size đã dùng (Tier A/B), tb logs |
-| Người 3 | Tất cả | Test accuracy, macro-F1, confusion matrix, đề xuất model cuối |
+| M2 | M3 | Tên model + strategy tốt nhất, `model_config.yaml`, bảng params |
+| M3 | M4 | Checkpoint `best.pt`, training history, image_size đã dùng (Tier A/B), tb logs |
+| M4 | Tất cả | Test accuracy, macro-F1, confusion matrix, đề xuất model cuối |
 
 ---
 
-## ⚠️ LƯU Ý QUAN TRỌNG CHO CẢ 3 NGƯỜI
+## ⚠️ LƯU Ý QUAN TRỌNG
 
 1. **Không sửa `src/data/`** — M1 đã ổn định, 47 test pass. M2–M4 chỉ **đọc** từ đó.
 2. **Không hardcode hyperparameter** — mọi giá trị vào YAML (đề bài yêu cầu "adjust hyperparameters" → phải chỉnh được từ file/lệnh).
 3. **Ghi rõ Tier trong mọi bảng** — kết quả 224×224 và 64×64 **không** so sánh trực tiếp được.
 4. **Mọi run ghi `metrics.json` theo cùng schema** → M5 tổng hợp tự động được.
 5. **Test không cần data thật** — dùng `FakeData` để test nhanh; chỉ chạy full data ở bước verify.
-6. **Mỗi người commit riêng** — 1 module = 1 commit, Conventional Commits.
+6. **Mỗi module = 1 commit** — Conventional Commits.
 7. **Cập nhật `progress_status.md` + `README.md`** sau khi xong phần mình.
 
 ---
 
 **Ngày tạo:** 2026-10-25
-**Cập nhật lần cuối:** 2026-10-25 (align với `đề.txt`, 3 người, CIFAR-10, có đo thời gian train thật)
-**Phiên bản:** 3.0
-**Trạng thái:** Ready for Phase 2 (3 người, aligned với đề bài)
+**Cập nhật lần cuối:** 2026-10-25 (chỉ M2/M3/M4, code đã kiểm chứng bằng chạy thật)
+**Phiên bản:** 4.0
+**Trạng thái:** Ready for M2 → M3 → M4

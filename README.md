@@ -283,7 +283,7 @@ Artifact ghi ra: `results/runs/20261025-150847/` gồm `config.yaml`, `metrics.j
 
 > **Trạng thái:** các lệnh dưới đây là **thiết kế dự kiến**, chưa chạy được — `src/models/factory.py`, `src/training/trainer.py`, `src/evaluation/metrics.py` hiện mới chỉ là thư mục rỗng (`__init__.py`), và `configs/train_config.yaml` / `model_config.yaml` / `eval_config.yaml` chưa được tạo. Được cập nhật khi M2–M4 hoàn tất.
 >
-> **Kế hoạch chi tiết** (chia 3 người, file nào, hàm nào, test nào, mất bao lâu): xem [`docs/PHASE2_PLAN.md`](docs/PHASE2_PLAN.md).
+> **Kế hoạch chi tiết** (file nào, hàm nào, test nào, mất bao lâu): xem [`docs/PHASE2_PLAN.md`](docs/PHASE2_PLAN.md).
 
 ```powershell
 # Train 1 model (config trong configs/train_config.yaml)

@@ -103,12 +103,12 @@ Bước 1 (Environment Setup) — ✅ xong: `requirements.txt` pin torch 2.14.1 
 | 0b | M0b — Dataset CIFAR-10 | 2026-10-25 | ✅ | — | Tải + giải nén + verify: 50k train / 10k test, 10 lớp cân bằng, ảnh 32×32 |
 | 1 | M1 — Data pipeline (dataset/transforms/split) | 2026-10-25 | ✅ | `d0321eb` + `28aa1ff` | 45k/5k/10k stratified seed=42; ảnh [B,3,224,224] float32; 47 test pass; run `20261025-150847` |
 | 1b | M1b — Docs align với `đề.txt` | 2026-10-25 | ✅ | `a1a6b71` | Ma trận truy vết 14 yêu cầu đề; sửa shape, số liệu bịa, path không tồn tại; thêm MD5 check cho `verify_data.py` |
-| 2 | M2 — Model factory (backbone/head/freeze) | 2026-10-25 | ⏳ | — | Plan: `docs/PHASE2_PLAN.md` §Người 1 — phủ E1, O1–O5 |
-| 3 | M3 — Training loop + TensorBoard | 2026-10-25 | ⏳ | — | Plan: `docs/PHASE2_PLAN.md` §Người 2 — phủ E2, E3, O9, O10 |
-| 4 | M4 — Evaluation & metrics | 2026-10-25 | ⏳ | — | Plan: `docs/PHASE2_PLAN.md` §Người 3 — phủ O11 |
+| 2 | M2 — Model factory (backbone/head/freeze) | 2026-10-25 | ⏳ | — | Plan: `docs/PHASE2_PLAN.md` §M2 — phủ E1, O1–O5 |
+| 3 | M3 — Training loop + TensorBoard | 2026-10-25 | ⏳ | — | Plan: `docs/PHASE2_PLAN.md` §M3 — phủ E2, E3, O9, O10 |
+| 4 | M4 — Evaluation & metrics | 2026-10-25 | ⏳ | — | Plan: `docs/PHASE2_PLAN.md` §M4 — phủ O11 |
 | 5 | M5 — Experiment sweep + báo cáo | 2026-10-25 | ⏳ | — | Chạy train + tổng hợp bảng so sánh |
 
-> **Kế hoạch chi tiết M2–M4:** `docs/PHASE2_PLAN.md` — chia cho 3 người, danh sách file, chức năng từng hàm, code mẫu đã kiểm chứng, test, tiêu chí hoàn thành, và ước lượng thời gian train **đã đo thật** trên máy này.
+> **Kế hoạch chi tiết M2–M4:** `docs/PHASE2_PLAN.md` — danh sách file, chức năng từng hàm, code mẫu đã kiểm chứng, test, tiêu chí hoàn thành, và ước lượng thời gian train **đã đo thật** trên máy này.
 > Bản tóm tắt ban đầu: `docs/plan-m2-m4.md`.
 
 ## Decisions Log
