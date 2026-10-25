@@ -92,7 +92,7 @@ Bước 1 (Environment Setup) — ✅ xong: `requirements.txt` pin torch 2.14.1 
   - [x] Tests bổ sung — `tests/unit/test_prepare.py` → 11 test (tổng 47)
 - **Status** — Describe ✅ / Generate ✅ / Review ✅ / Run ✅ / Test ✅ / Refactor ✅ / Commit ✅
 - **Last run** — `results/runs/20261025-150847/` (metrics.json: validation status PASS)
-- **Commit** — `f130862` (M0 scaffold), `d0321eb` (M1 data pipeline), `28aa1ff` (prepare step: `data/processed` + `data/splits`)
+- **Commit** — `f130862` (M0 scaffold), `d0321eb` (M1 data pipeline), `28aa1ff` (prepare step: `data/processed` + `data/splits`), `a1a6b71` (docs align với đề bài + MD5 check)
 - **DoD checklist** — xem `checklists/dod.md` (workspace skill)
 
 ## Module Log
@@ -102,6 +102,7 @@ Bước 1 (Environment Setup) — ✅ xong: `requirements.txt` pin torch 2.14.1 
 | 0 | M0 — Environment & Scaffold | 2026-10-25 | ✅ | — | Python 3.13.2, torch 2.14.1+cpu, torchvision 0.29.1+cpu, tensorboard 2.21.0; CPU-only |
 | 0b | M0b — Dataset CIFAR-10 | 2026-10-25 | ✅ | — | Tải + giải nén + verify: 50k train / 10k test, 10 lớp cân bằng, ảnh 32×32 |
 | 1 | M1 — Data pipeline (dataset/transforms/split) | 2026-10-25 | ✅ | `d0321eb` + `28aa1ff` | 45k/5k/10k stratified seed=42; ảnh [B,3,224,224] float32; 47 test pass; run `20261025-150847` |
+| 1b | M1b — Docs align với `đề.txt` | 2026-10-25 | ✅ | `a1a6b71` | Ma trận truy vết 14 yêu cầu đề; sửa shape, số liệu bịa, path không tồn tại; thêm MD5 check cho `verify_data.py` |
 | 2 | M2 — Model factory (backbone/head/freeze) | 2026-10-25 | ⏳ | — | |
 | 3 | M3 — Training loop + TensorBoard | 2026-10-25 | ⏳ | — | |
 | 4 | M4 — Evaluation & metrics | 2026-10-25 | ⏳ | — | |
@@ -163,4 +164,4 @@ Bước 1 (Environment Setup) — ✅ xong: `requirements.txt` pin torch 2.14.1 
 - [x] Có thể giải thích được
 - [x] Docs đã cập nhật
 - [x] **Docs bám sát `đề.txt`** — mục "Đối chiếu với đề bài" trong `README.md` và `progress_status.md` được cập nhật mỗi milestone
-- [x] Đã committed (Conventional Commit) — `f130862` (M0), `d0321eb` (M1), `28aa1ff` (prepare)
+- [x] Đã committed (Conventional Commit) — `f130862` (M0), `d0321eb` (M1), `28aa1ff` (prepare), `a1a6b71` (docs align đề)
