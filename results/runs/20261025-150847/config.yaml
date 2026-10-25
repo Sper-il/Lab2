@@ -1,0 +1,14 @@
+data:
+  data_root: data/raw
+  image_size: 224
+  batch_size: 64
+  num_workers: 4
+  val_size: 5000
+  seed: 42
+  augment: true
+  pin_memory: false
+  persistent_workers: false
+  download: false
+  in_memory: true
+split:
+  strategy: stratified

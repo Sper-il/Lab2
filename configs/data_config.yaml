@@ -1,0 +1,42 @@
+# Cấu hình data pipeline cho CIFAR-10
+# Dùng chung cho cả train, validation và test.
+
+data:
+  # Thư mục chứa CIFAR-10 (đã tải bằng scripts/download_data.py)
+  data_root: data/raw
+
+  # Kích thước ảnh đầu vào.
+  # 224 = chuẩn ImageNet, khớp với resnet18/vgg11/densenet121 pre-trained.
+  image_size: 224
+
+  # Kích thước batch
+  batch_size: 64
+
+  # Số tiến trình DataLoader (được giới hạn theo số CPU thực tế)
+  num_workers: 4
+
+  # Số mẫu validation lấy từ tập train (phân tầng theo lớp)
+  val_size: 5000
+
+  # Seed cho split + shuffle (đảm bảo reproducible)
+  seed: 42
+
+  # Augmentation cho tập train (RandomCrop + RandomHorizontalFlip)
+  augment: true
+
+  # Chỉ có tác dụng khi chạy trên GPU — bật sẵn để không phải sửa config sau
+  pin_memory: false
+
+  # Giữ worker process sống giữa các epoch (tiết kiệm thời gian khởi tạo)
+  persistent_workers: false
+
+  # Cho phép tải dataset tự động nếu chưa có
+  download: false
+
+  # Nạp toàn bộ ảnh vào RAM (CIFAR-10 chỉ ~150 MB, nhanh hơn đọc pickle từng lần)
+  in_memory: true
+
+# Thuật toán chia tập
+split:
+  # stratified = giữ đúng tỉ lệ lớp giữa train và validation
+  strategy: stratified

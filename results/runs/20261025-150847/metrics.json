@@ -1,0 +1,71 @@
+{
+  "module": "M1_data_pipeline",
+  "config_path": "configs/data_config.yaml",
+  "loader_config": {
+    "data_root": "data/raw",
+    "image_size": 224,
+    "batch_size": 64,
+    "num_workers_requested": 4,
+    "num_workers_effective": 4,
+    "val_size": 5000,
+    "seed": 42,
+    "augment": true,
+    "in_memory": true
+  },
+  "splits": {
+    "train": {
+      "num_batches": 704,
+      "num_samples": 45000,
+      "batch_size": 64,
+      "image_shape": [
+        64,
+        3,
+        224,
+        224
+      ],
+      "image_dtype": "torch.float32",
+      "label_shape": [
+        64
+      ],
+      "label_dtype": "torch.int64"
+    },
+    "val": {
+      "num_batches": 79,
+      "num_samples": 5000,
+      "batch_size": 64,
+      "image_shape": [
+        64,
+        3,
+        224,
+        224
+      ],
+      "image_dtype": "torch.float32",
+      "label_shape": [
+        64
+      ],
+      "label_dtype": "torch.int64"
+    },
+    "test": {
+      "num_batches": 157,
+      "num_samples": 10000,
+      "batch_size": 64,
+      "image_shape": [
+        64,
+        3,
+        224,
+        224
+      ],
+      "image_dtype": "torch.float32",
+      "label_shape": [
+        64
+      ],
+      "label_dtype": "torch.int64"
+    }
+  },
+  "validation": {
+    "total_train_plus_val": 50000,
+    "expected_total_train_plus_val": 50000,
+    "test_samples": 10000,
+    "status": "PASS"
+  }
+}

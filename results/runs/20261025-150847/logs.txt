@@ -1,0 +1,23 @@
+2026-10-25 15:08:47,400 | INFO    | src.data | ======================================================================
+2026-10-25 15:08:47,401 | INFO    | src.data | MODULE M1 — DATA PIPELINE (CIFAR-10)
+2026-10-25 15:08:47,401 | INFO    | src.data | ======================================================================
+2026-10-25 15:08:47,409 | INFO    | src.data | Config: configs/data_config.yaml
+2026-10-25 15:08:47,410 | INFO    | src.data | Data root: data/raw
+2026-10-25 15:08:47,410 | INFO    | src.data | image_size=224 | batch_size=64 | val_size=5000 | seed=42 | augment=True
+2026-10-25 15:08:49,348 | INFO    | src.data.split | Split train/val: 45000 train / 5000 val (seed=42, 10 lớp)
+2026-10-25 15:08:50,721 | INFO    | src.data.dataloader | DataLoader: train=704 batch | val=79 batch | test=157 batch | workers=4
+2026-10-25 15:11:07,653 | INFO    | src.data | train |  45000 mẫu |  704 batch | image [64, 3, 224, 224] torch.float32 | label [64]
+2026-10-25 15:11:07,653 | INFO    | src.data | val   |   5000 mẫu |   79 batch | image [64, 3, 224, 224] torch.float32 | label [64]
+2026-10-25 15:11:07,653 | INFO    | src.data | test  |  10000 mẫu |  157 batch | image [64, 3, 224, 224] torch.float32 | label [64]
+2026-10-25 15:11:07,657 | INFO    | src.data | Đã ghi artifact: E:\lab2\results\runs\20261025-150847
+2026-10-25 15:11:07,657 | INFO    | src.data |   - config.yaml
+2026-10-25 15:11:07,657 | INFO    | src.data |   - metrics.json
+2026-10-25 15:11:07,657 | INFO    | src.data |   - logs.txt
+2026-10-25 15:11:07,657 | INFO    | src.data | ======================================================================
+2026-10-25 15:11:07,657 | INFO    | src.data | M1 DATA PIPELINE - DONE
+2026-10-25 15:11:07,657 | INFO    | src.data | ======================================================================
+2026-10-25 15:15:03,655 | INFO    | src.data.split | Split train/val: 45000 train / 5000 val (seed=42, 10 lớp)
+2026-10-25 15:15:05,131 | INFO    | src.data.dataloader | DataLoader: train=704 batch | val=79 batch | test=157 batch | workers=2
+2026-10-25 15:15:06,314 | INFO    | plot_data_report | Da luu results\runs\20261025-150847\plots\class_distribution.png
+2026-10-25 15:15:41,212 | INFO    | plot_data_report | Da luu results\runs\20261025-150847\plots\sample_images.png
+2026-10-25 15:15:41,212 | INFO    | plot_data_report | Hoan tat bao cao truc quan: results\runs\20261025-150847
