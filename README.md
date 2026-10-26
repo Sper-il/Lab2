@@ -39,7 +39,7 @@ Công cụ: PyTorch 2.x + torchvision + TensorBoard.
 
 > Nguồn: `đề.txt`. Bảng này là hợp đồng giữa đề bài và hiện thực — dùng để kiểm tra "đã làm đúng chưa" ở mỗi milestone.
 >
-> **Kế hoạch triển khai M2–M4** (chia 3 người, file nào, hàm nào, test nào, ước lượng thời gian): [`docs/PHASE2_PLAN.md`](docs/PHASE2_PLAN.md)
+> **Kế hoạch triển khai M2–M4** (file nào, hàm nào, test nào, ước lượng thời gian): [`docs/plan-m2-m4.md`](docs/plan-m2-m4.md)
 
 | # | Yêu cầu trong `đề.txt` | Nội dung cụ thể | Hiện thực | Module | Trạng thái |
 |---|------------------------|-----------------|-----------|--------|-----------|
@@ -157,7 +157,7 @@ lab2/
 │   ├── trained/           # model cuối cùng đã đánh giá (gitignore)
 │   └── configs/           # config kiến trúc (yaml)
 │
-├── notebooks/             # EDA, thử nhanh (đặt tên theo ngày)
+├── notebooks/             # EDA + demo: 20261026_eda_cifar10_demo.ipynb (M2b)
 ├── tests/
 │   ├── unit/              # test transforms, split, dataset, prepare, factory (M2)
 │   │   ├── test_transforms.py
@@ -169,7 +169,7 @@ lab2/
 │       ├── test_dataloader_pipeline.py
 │       └── test_model_pipeline.py # 6 test M2
 │
-├── docs/                  # data-flow.md (M1), plan-m2-m4.md, reports/m2_models_report.md (M2)
+├── docs/                  # data-flow.md (M1), plan-m2-m4.md, reports/m2_models_report.md + final_report.md (M2), AUDIT_LOG.md
 ├── configs/               # data_config.yaml ✅ | model_config.yaml ✅ M2 | train_config.yaml, eval_config.yaml ⏳
 ├── results/runs/<ts>/     # metrics.json, config.yaml, logs.txt, plots/
 │
@@ -288,7 +288,7 @@ Artifact ghi ra: `results/runs/20261025-150847/` gồm `config.yaml`, `metrics.j
 
 > **Trạng thái:** `src/models/factory.py` + CLI khám phá đã chạy được (M2 ✅). `src/training/trainer.py`, `src/evaluation/metrics.py` hiện mới chỉ là thư mục rỗng (`__init__.py`), và `configs/train_config.yaml` / `configs/eval_config.yaml` chưa được tạo. Được cập nhật khi M3–M4 hoàn tất.
 >
-> **Kế hoạch chi tiết** (file nào, hàm nào, test nào, mất bao lâu): xem [`docs/PHASE2_PLAN.md`](docs/PHASE2_PLAN.md).
+> **Kế hoạch chi tiết** (file nào, hàm nào, test nào, mất bao lâu): xem [`docs/plan-m2-m4.md`](docs/plan-m2-m4.md).
 
 ```powershell
 # M2 — khám phá model (chạy được)
@@ -363,10 +363,12 @@ images, labels = next(iter(train_loader))
   "best_val_accuracy": 0.0,
   "test_accuracy": 0.0,
   "macro_f1": 0.0,
-  "params_total": 11689512,
+  "params_total": 11181642,
   "params_trainable": 5130,
   "inference_time_ms_per_sample": 0.0
 }
+
+> `params_total` / `params_trainable` là số **đo thật** của ResNet18 + freeze (`results/runs/20261026-115633/model_info.json`); các metric accuracy vẫn là 0.0 cho tới khi train xong M3.
 ```
 
 ## 8. Results
@@ -413,4 +415,4 @@ Tiêu chí đạt (định nghĩa trước khi code):
 ---
 
 Được duy trì với skill **ai-fusion-workflow**.
-Xem `AI_Usage.md` để biết cách AI được sử dụng trong project và `progress_status.md` để xem tiến độ/quyết định.
+Xem `docs/AI_Usage.md` để biết cách AI được sử dụng trong project và `docs/progress_status.md` để xem tiến độ/quyết định.
