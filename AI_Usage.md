@@ -61,6 +61,11 @@
 | `progress_status.md` (v2) | Thêm bảng đối chiếu đề bài, sửa shape `[B,3,32,32]` → `[B,3,224,224]`, cập nhật commit + số test | "Đảm bảo các docs luôn bám sát đề" |
 | `docs/plan-m2-m4.md` | Plan chi tiết M2/M3/M4 — file cần tạo, chức năng từng hàm, test, tiêu chí, ước lượng thời gian train đã đo thật | "Cho tôi plan chia việc phần m2 m3 m4, làm file gì làm ở đâu file đó có chức năng gì" |
 | `docs/PHASE2_PLAN.md` | Plan chi tiết M2/M3/M4 (theo format `PHASE2_PLAN.md`) — file nào, hàm nào, code mẫu, test, report template | "ghi phần m2 m3 m4 thôi" |
+| `src/models/registry.py` | `BACKBONE_REGISTRY` (3 backbone + `block_units` introspect), `resolve_spec`, `get_module` | "làm và chạy phần m2 giúp tôi" (plan `docs/PHASE2_PLAN.md` §M2) |
+| `src/models/factory.py` | `ModelConfig`, `build_model`, `replace_head` (Linear + Sequential), `freeze_backbone`, `unfreeze_last`, `count/describe_model` | "làm và chạy phần m2 giúp tôi" |
+| `src/models/__main__.py` + `configs/model_config.yaml` | CLI khám phá (`--model/--strategy/--print-model`) + config mặc định resnet18 freeze | "làm và chạy phần m2 giúp tôi" |
+| `tests/unit/test_factory.py` + `tests/integration/test_model_pipeline.py` | 17 unit + 6 integration test M2 | "làm và chạy phần m2 giúp tôi" |
+| `docs/reports/m2_models_report.md` | Report M2: bảng params, architecture exploration, adaptation, model đã chọn | "làm và chạy phần m2 giúp tôi" |
 
 ## 5. Prompt Purpose (cho mỗi artifact)
 
@@ -90,15 +95,28 @@
 - **`docs/PHASE2_PLAN.md` — `unfreeze_last` dùng `feature_attr=""` cho resnet18** → sẽ lấy `children[-1:]` của model = `fc` chứ không phải `layer4`, tức fine-tune sẽ không mở block nào. Đã thay bằng `block_units` khai báo tập trung trong `registry.py` và **verify bằng chạy thật**: resnet18 `ft1` = 75.1% params trainable (đúng ~`layer4`), vgg11 `ft1` = 94.7%, densenet121 `ft1` = 31.1%.
 - **`docs/PHASE2_PLAN.md` — `resolve_weights` dùng biến `self_name_normalized` chưa được định nghĩa** trong skeleton đầu tiên → sẽ `NameError` ngay khi gọi với `weights="IMAGENET1K_V1"`. Đã thay bằng mapping `_WEIGHT_ENUMS` ở cấp module, không cần hàm trợ.
 - *(Sẽ bổ sung sau mỗi module: chỗ sửa logic, đổi optimizer, đổi hyperparameter vì kết quả thực tế khác kỳ vọng.)*
+- **M2 — `src/models/__init__.py` (bản đầu của AI)** — import `resolve_weights` từ `registry` trong khi hàm này nằm ở `factory` → sẽ `ImportError` ngay khi `import src.models`. Đã sửa import cho đúng module.
+- **M2 — test/CLI chạy trên Windows PowerShell** — lệnh mẫu trong plan dùng `tail -n 20` (không tồn tại trên PowerShell) → đổi thành chạy `pytest -q` trực tiếp. VGG11 tải weights ~500MB bị rớt mạng 1 lần ở 57.7% (`ConnectionAbortedError`) → chạy lại, torchvision tiếp tục từ cache và thành công.
 
 ## 7. Validation Method
 
 - [x] Chạy code end-to-end trên môi trường sạch (venv mới tạo, dependency pin rõ ràng).
 - [ ] So sánh output với baseline / đáp án đã biết.
-- [x] Viết unit/integration test mà không có thay đổi thì sẽ fail (47 test cho M1).
+- [x] Viết unit/integration test mà không có thay đổi thì sẽ fail (47 test cho M1; 23 test cho M2).
 - [ ] Reproduce kết quả từ fresh clone + ghi lại command.
 - [ ] Sanity-check metric theo Definition of Done.
 - [x] **Đối chiếu docs với `đề.txt`**: mỗi yêu cầu trong đề (E1–E3, O1–O11) được ánh xạ tới file/module cụ thể trong bảng "Đối chiếu với đề bài"; mọi shape, số liệu và lệnh trong docs đã được đối chiếu lại với code thật.
+
+### Kiểm chứng riêng cho M2 (model factory)
+
+| Kiểm tra | Kết quả |
+|----------|---------|
+| `pytest tests/unit/test_factory.py` | **17 passed** in 31.8s (`weights=None`, không cần mạng) |
+| `pytest tests/integration/test_model_pipeline.py` | **6 passed** in 42.6s |
+| `python -m src.models --model resnet18` | Total 11,181,642 / trainable 5,130 (0.046%) / output `(1, 10)` — run `20261026-115633` |
+| `python -m src.models --model vgg11` | Total 128,807,306 / trainable 40,970 (0.032%) / output `(1, 10)` — run `20261026-120218` |
+| `python -m src.models --model densenet121` | Total 6,964,106 / trainable 10,250 (0.147%) / output `(1, 10)` — run `20261026-121817` |
+| VGG11 `freeze_head_full=true` | 92.8% trainable → test bắt lỗi cấu hình này PASS |
 
 ### Kiểm chứng riêng cho M1 (data pipeline)
 

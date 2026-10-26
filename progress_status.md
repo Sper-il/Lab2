@@ -47,14 +47,14 @@
 
 | # | Yêu cầu đề bài | Hiện thực | Module | Trạng thái |
 |---|-----------------|-----------|--------|-----------|
-| E1 | Experiment with different pre-trained models (VGG, DenseNet, etc.) | `src/models/factory.py` | M2 | ⏳ |
+| E1 | Experiment with different pre-trained models (VGG, DenseNet, etc.) | `src/models/factory.py` | M2 | ✅ |
 | E2 | Adjust the hyperparameters (lr, batch size, etc.) | `configs/*.yaml` + `src/training/` | M3, M5 | ⏳ |
 | E3 | Use TensorBoard to monitor the training process | `src/training/trainer.py` | M3 | ⏳ |
-| O1 | Load a Pre-trained Model (`weights=`/`pretrained=True`) | `src/models/factory.py` | M2 | ⏳ |
-| O2 | Explore the Model Architecture — print model, identify layers & params | `src/models/factory.py` | M2 | ⏳ |
-| O3 | Adapt the Model — replace final classification layer (10 classes) | `src/models/factory.py` | M2 | ⏳ |
-| O4 | Freeze earlier layers (transfer learning) | `src/models/factory.py` | M2 | ⏳ |
-| O5 | Unfreeze a few of the final layers (fine-tuning) | `src/models/factory.py` | M2 | ⏳ |
+| O1 | Load a Pre-trained Model (`weights=`/`pretrained=True`) | `src/models/factory.py` | M2 | ✅ |
+| O2 | Explore the Model Architecture — print model, identify layers & params | `src/models/factory.py` | M2 | ✅ |
+| O3 | Adapt the Model — replace final classification layer (10 classes) | `src/models/factory.py` | M2 | ✅ |
+| O4 | Freeze earlier layers (transfer learning) | `src/models/factory.py` | M2 | ✅ |
+| O5 | Unfreeze a few of the final layers (fine-tuning) | `src/models/factory.py` | M2 | ✅ |
 | O6 | Prepare the Data — load & prepare dataset | `src/data/` | **M1** | ✅ |
 | O7 | Use `torchvision.transforms` to preprocess | `src/data/transforms.py` | **M1** | ✅ |
 | O8 | Use `torch.utils.data.DataLoader` to create batches | `src/data/dataloader.py` | **M1** | ✅ |
@@ -103,7 +103,8 @@ Bước 1 (Environment Setup) — ✅ xong: `requirements.txt` pin torch 2.14.1 
 | 0b | M0b — Dataset CIFAR-10 | 2026-10-25 | ✅ | — | Tải + giải nén + verify: 50k train / 10k test, 10 lớp cân bằng, ảnh 32×32 |
 | 1 | M1 — Data pipeline (dataset/transforms/split) | 2026-10-25 | ✅ | `d0321eb` + `28aa1ff` | 45k/5k/10k stratified seed=42; ảnh [B,3,224,224] float32; 47 test pass; run `20261025-150847` |
 | 1b | M1b — Docs align với `đề.txt` | 2026-10-25 | ✅ | `a1a6b71` | Ma trận truy vết 14 yêu cầu đề; sửa shape, số liệu bịa, path không tồn tại; thêm MD5 check cho `verify_data.py` |
-| 2 | M2 — Model factory (backbone/head/freeze) | 2026-10-25 | ⏳ | — | Plan: `docs/PHASE2_PLAN.md` §M2 — phủ E1, O1–O5 |
+| 2 | M2 — Model factory (backbone/head/freeze) | 2026-10-26 | ✅ | — | `registry.py` + `factory.py` + CLI khám phá; 23 test pass (17 unit + 6 integration); verify weights thật cả 3 model; report `docs/reports/m2_models_report.md` |
+| 3 | M3 — Training loop + TensorBoard | 2026-10-26 | ⏳ | — | Plan: `docs/PHASE2_PLAN.md` §M3 — phủ E2, E3, O9, O10 |
 | 3 | M3 — Training loop + TensorBoard | 2026-10-25 | ⏳ | — | Plan: `docs/PHASE2_PLAN.md` §M3 — phủ E2, E3, O9, O10 |
 | 4 | M4 — Evaluation & metrics | 2026-10-25 | ⏳ | — | Plan: `docs/PHASE2_PLAN.md` §M4 — phủ O11 |
 | 5 | M5 — Experiment sweep + báo cáo | 2026-10-25 | ⏳ | — | Chạy train + tổng hợp bảng so sánh |
@@ -169,7 +170,7 @@ Bước 1 (Environment Setup) — ✅ xong: `requirements.txt` pin torch 2.14.1 
 
 - [x] Đúng yêu cầu
 - [x] Code chạy end-to-end
-- [x] Tests pass (47/47 — 36 data pipeline + 11 prepare)
+- [x] Tests pass (47/47 — 36 data pipeline + 11 prepare; M2: 23/23 — 17 factory + 6 pipeline, tổng 70)
 - [x] Không có secrets / không có artifact lớn
 - [x] Code đã self-review
 - [x] Có thể giải thích được

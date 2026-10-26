@@ -1,0 +1,28 @@
+# Cau hinh model cho CIFAR-10 (module M2)
+model:
+  # Backbone: resnet18 | vgg11 | densenet121
+  name: resnet18
+
+  # CIFAR-10 co 10 lop
+  num_classes: 10
+
+  # DEFAULT = dung weights pre-trained ImageNet
+  # IMAGENET1K_V1 = chi dinh ro weights
+  # null = from scratch (khong dung pre-trained, de doi chung)
+  weights: DEFAULT
+
+  # freeze_backbone: chi train head (transfer learning)
+  # fine_tune: mo gradient n block cuoi
+  # from_scratch: train toan bo tu dau
+  strategy: freeze_backbone
+
+  # So block cuoi mo gradient khi strategy = fine_tune
+  # resnet18: layer1..layer4 (4 stage)
+  # vgg11: 8 conv block trong features
+  # densenet121: 4 denseblock
+  freeze_until: 1
+
+  # Voi head Sequential (VGG11):
+  # true  = train ca Linear phia truoc lop cuoi (classifier = 103M params!)
+  # false = chi lop Linear cuoi (KHUYEN NGHI)
+  freeze_head_full: false

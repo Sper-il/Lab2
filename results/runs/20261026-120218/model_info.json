@@ -1,0 +1,19 @@
+{
+  "config": {
+    "name": "vgg11",
+    "num_classes": 10,
+    "strategy": "freeze_backbone",
+    "weights": "DEFAULT",
+    "freeze_until": 1,
+    "freeze_head_full": false
+  },
+  "params": {
+    "params_total": 128807306.0,
+    "params_trainable": 40970.0,
+    "params_trainable_pct": 0.03180720199209818
+  },
+  "output_shape": [
+    1,
+    10
+  ]
+}
