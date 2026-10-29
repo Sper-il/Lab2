@@ -1,0 +1,11 @@
+# Cau hinh danh gia M4.
+evaluation:
+  checkpoint: results/runs/<timestamp>/checkpoints/best.pt
+  model: resnet18
+  strategy: freeze_backbone
+  batch_size: 64
+  num_workers: 4
+  image_size: 64
+  device: auto
+  save_plots: true
+  top_k_errors: 12

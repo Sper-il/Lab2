@@ -1,6 +1,10 @@
 
-import torch
+import time
+from dataclasses import dataclass
+from typing import Any
+
 import numpy as np
+import torch
 
 
 def _prepare_tensors(pred, target):
@@ -155,8 +159,8 @@ def classification_report(pred, target, n_classes=10,
 
     lines.extend([
         "-" * 62,
-        f"Accuracy: {acc:.4f}",
-        f"Macro F1: {macro:.4f}",
+        "accuracy: {:.4f}".format(acc),
+        "macro avg: f1 {:.4f}".format(macro),
         f"Weighted Precision: {weighted_p:.4f}",
         f"Weighted Recall: {weighted_r:.4f}",
         f"Weighted F1: {weighted_f1:.4f}"
@@ -165,7 +169,39 @@ def classification_report(pred, target, n_classes=10,
     return "\n".join(lines)
 
 
-def evaluate_model(model, loader, device, n_classes=10):
+@dataclass
+class EvalResult:
+    """Kết quả đánh giá một model trên một loader.
+
+    Attributes:
+        accuracy: Độ chính xác tổng thể.
+        macro_f1: F1 trung bình macro.
+        per_class: Dict `{str(class_id): {precision, recall, f1, support}}`.
+        confusion_matrix: List 2D (n_classes, n_classes).
+        inference_time_ms_per_sample: Thời gian suy luận trung bình mỗi mẫu (ms).
+        n_samples: Tổng số mẫu đã đánh giá.
+    """
+
+    accuracy: float
+    macro_f1: float
+    per_class: dict[str, dict[str, float]]
+    confusion_matrix: list
+    inference_time_ms_per_sample: float
+    n_samples: int
+
+    def to_json_dict(self) -> dict[str, Any]:
+        """Trả về dict đúng schema `metrics.json` cho test + M5."""
+        return {
+            "accuracy": self.accuracy,
+            "macro_f1": self.macro_f1,
+            "per_class": self.per_class,
+            "confusion_matrix": self.confusion_matrix,
+            "inference_time_ms_per_sample": self.inference_time_ms_per_sample,
+            "n_samples": self.n_samples,
+        }
+
+
+def evaluate_model(model, loader, device="cpu", n_classes=10):
     """
     Đánh giá model trên loader.
     Giả định mỗi batch là (inputs, targets), model trả về logits.
@@ -176,12 +212,20 @@ def evaluate_model(model, loader, device, n_classes=10):
     all_targets = []
     all_probs = []
 
+    total_time = 0.0
+    total_samples = 0
+
     with torch.inference_mode():
         for inputs, targets in loader:
             inputs = inputs.to(device)
             targets = targets.to(device).long().reshape(-1)
 
+            start = time.perf_counter()
             logits = model(inputs)
+            if inputs.is_cuda:
+                torch.cuda.synchronize()
+            total_time += time.perf_counter() - start
+            total_samples += inputs.shape[0]
 
             if logits.ndim != 2 or logits.shape[1] != n_classes:
                 raise ValueError(
@@ -202,19 +246,28 @@ def evaluate_model(model, loader, device, n_classes=10):
     target = torch.cat(all_targets)
     probs = torch.cat(all_probs)
 
-    per_class = per_class_metrics(pred, target, n_classes)
-    cm = confusion_matrix(pred, target, n_classes)
-
-    return {
-        "accuracy": accuracy(pred, target),
-        "macro_f1": macro_f1(pred, target, n_classes),
-        "per_class": per_class,
-        "confusion_matrix": cm,
-        "classification_report": classification_report(
-            pred, target, n_classes
-        ),
-        "predictions": pred.numpy(),
-        "targets": target.numpy(),
-        "probabilities": probs.numpy()
+    per_class_raw = per_class_metrics(pred, target, n_classes)
+    # Key dạng string để JSON-serializable (test dùng {"0", "1", "2"})
+    per_class = {
+        str(i): {
+            "precision": v["p"],
+            "recall": v["r"],
+            "f1": v["f1"],
+            "support": v["support"],
+        }
+        for i, v in per_class_raw.items()
     }
+    cm = confusion_matrix(pred, target, n_classes)
+    ms_per_sample = (
+        (total_time / total_samples * 1000.0) if total_samples else 0.0
+    )
+
+    return EvalResult(
+        accuracy=accuracy(pred, target),
+        macro_f1=macro_f1(pred, target, n_classes),
+        per_class=per_class,
+        confusion_matrix=cm.tolist(),
+        inference_time_ms_per_sample=ms_per_sample,
+        n_samples=int(target.numel()),
+    )
 

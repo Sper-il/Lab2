@@ -8,8 +8,15 @@ import matplotlib.pyplot as plt
 PLOT_DIR = Path("plots")
 
 
-def _save_plot(filename):
-    """Lưu biểu đồ vào thư mục plots."""
+def _save_plot(filename, out_path=None):
+    """Lưu biểu đồ vào thư mục plots (hoặc `out_path` nếu test truyền vào)."""
+    if out_path is not None:
+        out = Path(out_path)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        plt.tight_layout()
+        plt.savefig(out, dpi=150, bbox_inches="tight")
+        plt.close()
+        return out
     PLOT_DIR.mkdir(parents=True, exist_ok=True)
     path = PLOT_DIR / filename
     plt.tight_layout()
@@ -18,7 +25,7 @@ def _save_plot(filename):
     return path
 
 
-def plot_confusion_matrix(cm, class_names=None):
+def plot_confusion_matrix(cm, class_names=None, out_path=None):
     """Vẽ heatmap ma trận nhầm lẫn."""
     cm = np.asarray(cm)
 
@@ -56,10 +63,10 @@ def plot_confusion_matrix(cm, class_names=None):
                 color="white" if cm[i, j] > threshold else "black"
             )
 
-    return _save_plot("confusion_matrix.png")
+    return _save_plot("confusion_matrix.png", out_path=out_path)
 
 
-def plot_per_class_f1(metrics):
+def plot_per_class_f1(metrics, out_path=None):
     """Vẽ biểu đồ F1-score theo lớp."""
     class_ids = list(metrics.keys())
     scores = [metrics[c]["f1"] for c in class_ids]
@@ -75,7 +82,7 @@ def plot_per_class_f1(metrics):
     )
     ax.grid(axis="y", linestyle="--", alpha=0.4)
 
-    return _save_plot("per_class_f1.png")
+    return _save_plot("per_class_f1.png", out_path=out_path)
 
 
 def plot_pr_curve(probabilities, targets, class_names=None):
