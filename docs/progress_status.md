@@ -105,8 +105,8 @@ Bước 1 (Environment Setup) — ✅ xong: `requirements.txt` pin torch 2.14.1 
 | 1b | M1b — Docs align với `đề.txt` | 2026-10-25 | ✅ | `a1a6b71` | Ma trận truy vết 14 yêu cầu đề; sửa shape, số liệu bịa, path không tồn tại; thêm MD5 check cho `verify_data.py` |
 | 2 | M2 — Model factory (backbone/head/freeze) | 2026-10-26 | ✅ | `75455dd` | `registry.py` + `factory.py` + CLI khám phá; 23 test pass (17 unit + 6 integration); verify weights thật cả 3 model; report `docs/reports/m2_models_report.md` |
 | 2b | M2b — Docs bổ sung (notebook/audit/final report) | 2026-10-26 | ✅ | (commit này) | `notebooks/20261026_eda_cifar10_demo.ipynb` + `docs/AUDIT_LOG.md` + `docs/reports/final_report.md`; sửa D1–D5 trong audit |
-| 3 | M3 — Training loop + TensorBoard | 2026-10-25 | ⏳ | — | Plan: `docs/plan-m2-m4.md` §2 — phủ E2, E3, O9, O10 |
-| 4 | M4 — Evaluation & metrics | 2026-10-25 | ⏳ | — | Plan: `docs/plan-m2-m4.md` §3 — phủ O11 |
+| 3 | M3 — Training loop + TensorBoard | 2026-10-29 | ✅ code, ⏳ train | `390b21d` | `trainer.py` (zero_grad→forward→loss→backward→step), loss/opt/scheduler/tb_utils, CLI sweep models×lr×bs; 13 test pass; train thật Tier B đang chạy `20261029-212336` (ep1: val 0.529) |
+| 4 | M4 — Evaluation & metrics | 2026-10-29 | ✅ code | `390b21d` | `EvalResult` + `evaluate_model(device=cpu)` + `out_path` plots + CLI eval + `eval_config.yaml`; 18 test pass; chờ checkpoint train xong để eval thật |
 | 5 | M5 — Experiment sweep + báo cáo | 2026-10-25 | ⏳ | — | Chạy train + tổng hợp bảng so sánh |
 
 > **Kế hoạch chi tiết M2–M4:** `docs/plan-m2-m4.md` — danh sách file, chức năng từng hàm, code mẫu đã kiểm chứng, test, tiêu chí hoàn thành, và ước lượng thời gian train **đã đo thật** trên máy này.

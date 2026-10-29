@@ -68,6 +68,12 @@
 | `notebooks/20261026_eda_cifar10_demo.ipynb` | EDA CIFAR-10 (bincount 5000/1000, split 45k/5k/10k, ảnh mẫu) + demo factory 3 backbone (forward → `(1,10)`) | "làm cho tôi notebook demo" (số liệu từ `metrics.json`/`model_info.json`, logic đã verify trên `.venv`) |
 | `docs/AUDIT_LOG.md` | Audit M1+M2: 4 lỗi code + 8 vấn đề docs, trạng thái xử lý | "coi cách docs có thiếu cái gì không" |
 | `docs/reports/final_report.md` | Báo cáo tổng hợp M1+M2: data, model, đối chiếu 14 yêu cầu đề, hạn chế, việc còn lại M3–M5 | "làm cho tôi báo cáo tổng hợp" |
+| `src/training/loss.py` + `optimizer.py` + `scheduler.py` + `tensorboard_utils.py` + `trainer.py` | M3 training loop (`zero_grad→forward→loss→backward→step`), loss/opt/scheduler factory, TB scalar/histogram/grad/image/graph | "chạy toàn bộ giúp tôi / làm liên tục cho tới khi xong" (plan `docs/plan-m2-m4.md` §2) |
+| `src/training/__main__.py` + `configs/train_config.yaml` | CLI train + sweep models×lr×bs, ghi `metrics.json`/`config.yaml`/`logs.txt`/`tb/`; mặc định Tier B 64×64 | "chạy toàn bộ giúp tôi" |
+| `src/evaluation/metrics.py` (sửa) + `visualize.py` (sửa) | `EvalResult` dataclass + `evaluate_model(device="cpu")`, `classification_report` có `accuracy`/`macro avg`, `plot_*` nhận `out_path` | "tiếp tục làm cho đến khi xong" (fix cho khớp test nhóm) |
+| `src/evaluation/__main__.py` + `configs/eval_config.yaml` | CLI eval: checkpoint → test loader → `metrics.json` + PNG | "chạy toàn bộ giúp tôi" (plan §M4) |
+| `tests/unit/test_training_components.py` + `tests/integration/test_training_loop.py` | 9 unit + 4 integration M3 (FakeData, <10s) | "chạy toàn bộ giúp tôi" |
+| `docs/reports/m3_training_report.md` + `m4_evaluation_report.md` | Report M3/M4: phủ đề E2/E3/O9/O10/O11, test, kết quả train thật | "nhớ cập nhật docs" |
 
 ## 5. Prompt Purpose (cho mỗi artifact)
 

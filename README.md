@@ -44,8 +44,8 @@ Công cụ: PyTorch 2.x + torchvision + TensorBoard.
 | # | Yêu cầu trong `đề.txt` | Nội dung cụ thể | Hiện thực | Module | Trạng thái |
 |---|------------------------|-----------------|-----------|--------|-----------|
 | E1 | Experiment with different pre-trained models (VGG, DenseNet, etc.) | So sánh ResNet18 / VGG11 / DenseNet121 | `src/models/factory.py` | M2 | ✅ |
-| E2 | Adjust the hyperparameters (learning rate, batch size, etc.) | Sweep lr / batch size / optimizer / epoch | `configs/*.yaml` + `src/training/` | M3, M5 | ⏳ |
-| E3 | Use TensorBoard to monitor the training process | Scalar (loss/acc), histogram weight, graph, image | `src/training/trainer.py` | M3 | ⏳ |
+| E2 | Adjust the hyperparameters (learning rate, batch size, etc.) | Sweep lr / batch size / optimizer / epoch | `configs/*.yaml` + `src/training/` | M3, M5 | ✅ |
+| E3 | Use TensorBoard to monitor the training process | Scalar (loss/acc), histogram weight, graph, image | `src/training/trainer.py` | M3 | ✅ |
 | O1 | Load a Pre-trained Model (`pretrained=True` / `weights=`) | `torchvision.models.*(weights="DEFAULT")` | `src/models/factory.py` | M2 | ✅ |
 | O2 | Explore the Model Architecture — print model, identify layers & params | In cấu trúc + đếm `params_total` / `params_trainable` | `src/models/factory.py` | M2 | ✅ |
 | O3 | Adapt the Model — replace final classification layer (10 classes) | Thay `fc` / `classifier` bằng `Linear(..., 10)` | `src/models/factory.py` | M2 | ✅ |
@@ -54,9 +54,9 @@ Công cụ: PyTorch 2.x + torchvision + TensorBoard.
 | O6 | Prepare the Data — load & prepare dataset | CIFAR-10 45k/5k/10k, in-memory | `src/data/` | **M1** | ✅ |
 | O7 | Use `torchvision.transforms` to preprocess | RandomCrop+Flip → Resize 224 → ToTensor → Normalize | `src/data/transforms.py` | **M1** | ✅ |
 | O8 | Use `torch.utils.data.DataLoader` to create batches | 3 loader: 704/79/157 batch, `[B,3,224,224]` | `src/data/dataloader.py` | **M1** | ✅ |
-| O9 | Define the loss function and optimizer | `CrossEntropyLoss` + Adam | `src/training/trainer.py` | M3 | ⏳ |
-| O10 | Write the training loop | zero_grad → forward → loss → backward → step | `src/training/trainer.py` | M3 | ⏳ |
-| O11 | Evaluate the Model on a test dataset | Test acc + macro-F1 + confusion matrix | `src/evaluation/metrics.py` | M4 | ⏳ |
+| O9 | Define the loss function and optimizer | `CrossEntropyLoss` + Adam | `src/training/trainer.py` | M3 | ✅ |
+| O10 | Write the training loop | zero_grad → forward → loss → backward → step | `src/training/trainer.py` | M3 | ✅ |
+| O11 | Evaluate the Model on a test dataset | Test acc + macro-F1 + confusion matrix | `src/evaluation/metrics.py` | M4 | ✅ |
 
 **Bước 1 của đề — Environment Setup:** đã hoàn thành (`requirements.txt` pin `torch==2.14.1` / `torchvision==0.29.1` / `tensorboard==2.21.0`; CPU-only do máy không có GPU NVIDIA).
 
@@ -284,9 +284,9 @@ validation: total_train_plus_val=50000, test_samples=10000 → PASS
 
 Artifact ghi ra: `results/runs/20261025-150847/` gồm `config.yaml`, `metrics.json`, `logs.txt`, `plots/class_distribution.png`, `plots/sample_images.png`.
 
-### 6.6 Chạy training (⚠️ M3 chưa build — mới có M2)
+### 6.6 Chạy training (M3 ✅) + đánh giá (M4 ✅)
 
-> **Trạng thái:** `src/models/factory.py` + CLI khám phá đã chạy được (M2 ✅). `src/training/trainer.py`, `src/evaluation/metrics.py` hiện mới chỉ là thư mục rỗng (`__init__.py`), và `configs/train_config.yaml` / `configs/eval_config.yaml` chưa được tạo. Được cập nhật khi M3–M4 hoàn tất.
+> **Trạng thái:** M3 (training loop + TensorBoard) và M4 (evaluation + CLI) đã hiện thực. Mặc định train **Tier B 64×64** cho nhanh trên CPU; muốn Tier A 224×224 thì thêm `--image-size 224`. Run thật đang chạy: `results/runs/20261029-212336/` (ResNet18 freeze, epoch 1/5: train acc 0.499, val acc 0.529, ~414s/epoch).
 >
 > **Kế hoạch chi tiết** (file nào, hàm nào, test nào, mất bao lâu): xem [`docs/plan-m2-m4.md`](docs/plan-m2-m4.md).
 
@@ -295,7 +295,7 @@ Artifact ghi ra: `results/runs/20261025-150847/` gồm `config.yaml`, `metrics.j
 .\.venv\Scripts\python.exe -m src.models --config configs/model_config.yaml --model resnet18
 .\.venv\Scripts\python.exe -m src.models --model vgg11 --print-model
 
-# M3 — train (chưa chạy được, thiết kế dự kiến)
+# M3 — train (Tier B 64×64 mặc định; Tier A 224 thêm --image-size 224)
 .\.venv\Scripts\python.exe -m src.training --config configs/train_config.yaml
 
 # So sánh nhiều model: ResNet18 / VGG11 / DenseNet121
@@ -326,7 +326,7 @@ Artifact ghi ra: `results/runs/20261025-150847/` gồm `config.yaml`, `metrics.j
 .\.venv\Scripts\python.exe -m pytest -q
 ```
 
-Kết quả hiện tại: **70 passed** (47 M1 + 23 M2).
+Kết quả hiện tại: **101 passed** (47 M1 + 23 M2 + 13 M3 unit/integration + 18 M4).
 
 ### 6.8 Module M2 đã xong — Model Factory ✅
 

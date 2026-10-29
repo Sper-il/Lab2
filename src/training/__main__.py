@@ -59,7 +59,7 @@ def _train_single(raw_train: dict, raw_tb: dict, run_parent: Path, tag: str) -> 
         image_size=cfg.image_size,
         seed=cfg.seed,
     )
-    train_loader, val_loader, _ = build_dataloaders(data_cfg)
+    train_loader, val_loader, test_loader = build_dataloaders(data_cfg)
 
     model = build_model(
         ModelConfig(
@@ -93,7 +93,7 @@ def _train_single(raw_train: dict, raw_tb: dict, run_parent: Path, tag: str) -> 
             "model": cfg.model,
             "strategy": cfg.strategy,
             "params": params,
-            "data": dataset_summary(train_loader, val_loader, val_loader),
+            "data": dataset_summary(train_loader, val_loader, test_loader),
             "train_summary": {
                 "epochs": cfg.epochs,
                 "epochs_run": summary["epochs_run"],
