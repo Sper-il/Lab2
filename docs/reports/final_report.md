@@ -1,14 +1,14 @@
-# Báo cáo tổng hợp — Practice 2 (M1+M2, tính đến 2026-10-26)
+# Báo cáo tổng hợp — Practice 2 (M1–M4, tính đến 2026-10-29)
 
 > Báo cáo tổng hợp toàn project: bài toán, dữ liệu, model, kết quả đã đo, và việc còn lại.
-> Quy tắc: **mọi con số đều có nguồn** (file artifact hoặc lệnh đã chạy). Chỗ nào chưa có số thật thì ghi rõ "chưa đo", không bịa.
+> Quy tắc: **mọi con số đều có nguồn** (file artifact hoặc lệnh đã chạy). Chỗ nào chưa có số thật thì ghi rõ "chưa đo / đang chạy", không bịa.
 
 ## 1. Bài toán & phạm vi
 
 - **Đề bài** (`đề.txt`): Practice 2 — nạp và fine-tune model pre-trained (`torchvision.models`), tinh chỉnh hyperparameter, theo dõi bằng TensorBoard.
 - **Bài toán cụ thể:** phân loại ảnh CIFAR-10 (10 lớp) bằng backbone ImageNet, so sánh transfer learning (freeze) vs fine-tuning (unfreeze lớp cuối).
 - **Môi trường:** Windows, Python 3.13.2, PyTorch 2.14.1+cpu / torchvision 0.29.1+cpu / tensorboard 2.21.0, **CPU-only** (không có GPU NVIDIA).
-- **Phạm vi báo cáo này:** M1 (data pipeline ✅) + M2 (model factory ✅). M3 (training) + M4 (evaluation) + M5 (sweep) chưa làm — xem §6.
+- **Phạm vi báo cáo này:** M1 (data pipeline ✅) + M2 (model factory ✅) + M3 (training loop + TensorBoard ✅ code, ⏳ train thật đang chạy) + M4 (evaluation ✅ code, ⏳ chờ checkpoint). M5 (sweep) sau M3/M4 — xem §6.
 
 ## 2. Dữ liệu (M1 ✅)
 
@@ -59,24 +59,30 @@ Nguồn: `count_parameters()` sau `build_model()` với weights ImageNet thật 
 
 Chi tiết từng milestone: `docs/reports/m2_models_report.md` (M2). Demo chạy được: `notebooks/20261026_eda_cifar10_demo.ipynb`.
 
-## 5. Hạn chế đã biết
+## 5. Training (M3 — code ✅, train thật ⏳) & Evaluation (M4 — code ✅)
 
-- **Chưa có số accuracy nào.** Mọi con số "0.74/0.73" từng xuất hiện trong docs cũ là bịa — đã xoá. Số thật chỉ có sau M3/M4.
-- **CPU-only nên train chậm** (đã đo thật): ResNet18 freeze 224×224 ≈ 37 phút/epoch; VGG11 ≈ 144 phút/epoch (~12 giờ/5 epoch — không khả thi). Plan M3 dùng 2 tầng: Tier A 224×224 (báo cáo chính) + Tier B 64×64 (~5 phút/epoch, sweep rộng).
-- **Ảnh 32×32 upsample lên 224×224** — mất chi tiết, nhưng bắt buộc để dùng weights ImageNet.
+- M3: `Trainer` (zero_grad→forward→loss→backward→step), `best.pt` theo val acc, TensorBoard scalar/histogram/grad/image; CLI sweep models×lr×bs; 13 test pass. Train thật Tier B (`results/runs/20261029-212336/`, ResNet18 freeze 64×64): epoch 1/5 — train 1.4501/0.4993, val 1.3911/0.5288 (~414s/epoch); epoch 2–5 đang chạy. Chi tiết: `docs/reports/m3_training_report.md`.
+- M4: `EvalResult` + `evaluate_model(device="cpu")` + plots `out_path` + CLI eval; 18 test pass. Eval thật chờ `best.pt` rồi chạy `python -m src.evaluation --checkpoint ...`. Chi tiết: `docs/reports/m4_evaluation_report.md`.
+
+## 6. Hạn chế đã biết
+
+- **Accuracy Tier B thấp hơn Tier A** (ảnh 64×64 mất chi tiết hơn 224×224) — báo cáo nêu rõ điều kiện, không trộn 2 bảng.
+- **CPU-only nên train chậm** (đo thật run này: ~414s/epoch Tier B ResNet18 freeze; Tier A 224 ≈ 37 phút/epoch; VGG11 ≈ 144 phút/epoch — không khả thi). Vì vậy Tier B dùng để sweep, Tier A chỉ chạy ResNet18 khi có thời gian.
+- **Mới xong epoch 1/5** — số cuối (best val, test acc, macro-F1) chỉ có sau khi train + eval xong; sẽ điền vào README §8 + report này.
+- **Ảnh 32×32 upsample** — mất chi tiết, nhưng bắt buộc để dùng weights ImageNet.
 - **Mục tiêu accuracy là tự đặt** (freeze ≥ 0.70, fine-tune ≥ 0.80) — đề bài không cho ngưỡng.
 
-## 6. Việc còn lại (M3–M5)
+## 7. Việc còn lại (M5 + hoàn tất M3/M4)
 
-| Module | Nội dung | Ước lượng |
+| Module | Nội dung | Trạng thái |
 |--------|----------|-----------|
-| M3 | `src/training/` (loop, scheduler, checkpoint) + TensorBoard (scalar/histogram/graph/image) + `configs/train_config.yaml` | Plan `docs/plan-m2-m4.md` §2 |
-| M4 | `src/evaluation/metrics.py` (acc, macro-F1, confusion matrix) + `configs/eval_config.yaml` | Plan §M4 |
+| M3 train | chờ epoch 2–5 xong → lấy `best.pt` + `metrics.json` | ⏳ đang chạy |
+| M4 eval | chạy `python -m src.evaluation --checkpoint <best.pt>` → `metrics.json` + PNG | ⏳ chờ checkpoint |
 | M5 | Sweep lr/batch/optimizer + Tier B 64×64 + bảng so sánh, điền mục 8 Results trong `README.md` | Sau M3/M4 |
 
 ## Phụ lục — file & commit
 
-- Commit: `f130862` (scaffold) → `d0321eb` + `28aa1ff` (M1) → `a1a6b71` (align đề) → `75455dd` (M2).
-- Code: `src/data/` (7 file), `src/models/` (4 file), `src/utils/` (2 file), `scripts/` (4 file).
-- Test: 70 passed (47 M1 + 23 M2).
-- Audit: `docs/AUDIT_LOG.md`. Demo: `notebooks/20261026_eda_cifar10_demo.ipynb`.
+- Commit: `f130862` (scaffold) → `d0321eb` + `28aa1ff` (M1) → `a1a6b71` (align đề) → `75455dd` (M2) → `390b21d` (M3/M4 code) → `cd5b75d` (docs M3/M4).
+- Code: `src/data/` (7 file), `src/models/` (4 file), `src/training/` (6 file), `src/evaluation/` (3 file + 2 test nhóm), `src/utils/` (2 file), `scripts/` (4 file).
+- Test: 101 passed (47 M1 + 23 M2 + 13 M3 + 18 M4).
+- Audit: `docs/AUDIT_LOG.md`. Demo: `notebooks/20261026_eda_cifar10_demo.ipynb`. Reports: `m2_models_report.md`, `m3_training_report.md`, `m4_evaluation_report.md`.
