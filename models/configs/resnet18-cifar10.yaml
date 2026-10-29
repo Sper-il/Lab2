@@ -1,0 +1,20 @@
+backbone: resnet18
+num_classes: 10
+weights_source: torchvision IMAGENET1K_V1 (ResNet18_Weights.DEFAULT)
+head:
+  module: fc
+  type: Linear
+  in_features: 512
+  out_features: 10
+strategy:
+  freeze_backbone:
+    trainable: [fc.weight, fc.bias]
+    trainable_params: 5130
+  fine_tune_block4:
+    freeze_until: 1
+    unfreezes: [layer4, fc]
+    note: BatchNorm trong block duoc mo luon
+input_size: [3, 224, 224]
+run_ref: results/runs/20261029-220833/resnet18-lr0.001-bs32-0/
+test_accuracy: 0.8273
+macro_f1: 0.8258

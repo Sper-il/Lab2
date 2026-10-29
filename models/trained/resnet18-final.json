@@ -1,0 +1,1 @@
+{"checkpoint_local": "results/runs/20261029-220833/resnet18-lr0.001-bs32-0/checkpoints/best.pt", "copy_local": "models/checkpoints/resnet18-best.pt", "eval_ref": "results/runs/20261029-220833/resnet18-lr0.001-bs32-0/eval/metrics.json", "image_size": 64, "macro_f1": 0.8258, "model": "resnet18", "strategy": "fine_tune", "test_accuracy": 0.8273, "tier": "B"}

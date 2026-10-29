@@ -1,0 +1,1 @@
+{"checkpoint_local": "results/runs/20261029-220833/vgg11-lr0.001-bs32-1/checkpoints/best.pt", "copy_local": "models/checkpoints/vgg11-best.pt", "eval_ref": "results/runs/20261029-220833/vgg11-lr0.001-bs32-1/eval/metrics.json", "image_size": 64, "macro_f1": 0.8305, "model": "vgg11", "strategy": "fine_tune", "test_accuracy": 0.8331, "tier": "B"}

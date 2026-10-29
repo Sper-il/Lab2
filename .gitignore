@@ -20,9 +20,12 @@ data/splits/
 # (giữ lại data/README.md — tài liệu, không phải dataset)
 !data/README.md
 
-# Models
-models/checkpoints/
-models/trained/
+# Models (weight nang: khong push; chi giu README/configs/JSON nhe + .gitkeep giu folder)
+models/checkpoints/*
+!models/checkpoints/.gitkeep
+models/trained/*
+!models/trained/.gitkeep
+!models/trained/*.json
 *.pt
 *.pth
 *.onnx

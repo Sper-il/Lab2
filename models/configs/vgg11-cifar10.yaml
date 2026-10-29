@@ -1,0 +1,20 @@
+backbone: vgg11
+num_classes: 10
+weights_source: torchvision IMAGENET1K_V1 (VGG11_Weights.DEFAULT)
+head:
+  module: classifier
+  type: Sequential[7]
+  note: giu nguyen 6 lop dau, chi thay lop cuoi Linear(4096, 10)
+  last_layer: {type: Linear, in_features: 4096, out_features: 10}
+strategy:
+  freeze_backbone:
+    freeze_head_full: false
+    trainable: [classifier.6.weight, classifier.6.bias]
+    trainable_params: 40970
+  fine_tune:
+    freeze_until: 1
+    unfreezes: [features.16, features.18, classifier.6]
+input_size: [3, 224, 224]
+run_ref: results/runs/20261029-220833/vgg11-lr0.001-bs32-1/
+test_accuracy: 0.8331
+macro_f1: 0.8305

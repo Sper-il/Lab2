@@ -1,0 +1,103 @@
+{
+  "model": "resnet18",
+  "strategy": "fine_tune",
+  "params": {
+    "params_total": 11181642.0,
+    "params_trainable": 8398858.0,
+    "params_trainable_pct": 75.11292169790448
+  },
+  "data": {
+    "train": {
+      "num_batches": 1407,
+      "num_samples": 45000,
+      "batch_size": 32,
+      "image_shape": [
+        32,
+        3,
+        64,
+        64
+      ],
+      "image_dtype": "torch.float32",
+      "label_shape": [
+        32
+      ],
+      "label_dtype": "torch.int64"
+    },
+    "val": {
+      "num_batches": 157,
+      "num_samples": 5000,
+      "batch_size": 32,
+      "image_shape": [
+        32,
+        3,
+        64,
+        64
+      ],
+      "image_dtype": "torch.float32",
+      "label_shape": [
+        32
+      ],
+      "label_dtype": "torch.int64"
+    },
+    "test": {
+      "num_batches": 313,
+      "num_samples": 10000,
+      "batch_size": 32,
+      "image_shape": [
+        32,
+        3,
+        64,
+        64
+      ],
+      "image_dtype": "torch.float32",
+      "label_shape": [
+        32
+      ],
+      "label_dtype": "torch.int64"
+    }
+  },
+  "train_summary": {
+    "epochs": 5,
+    "epochs_run": 5,
+    "best_val_accuracy": 0.8296,
+    "best_epoch": 4,
+    "stopped_early": false
+  },
+  "history": {
+    "train_loss": [
+      0.8829865238189697,
+      0.6958919310463799,
+      0.6409387449794346,
+      0.6076074372609457,
+      0.5813069868299696
+    ],
+    "train_acc": [
+      0.6992222222222222,
+      0.7595555555555555,
+      0.7795555555555556,
+      0.7897777777777778,
+      0.7988
+    ],
+    "val_loss": [
+      0.5775808025836945,
+      0.5993483522415161,
+      0.5183432425498963,
+      0.5073640619277954,
+      0.48649552965164183
+    ],
+    "val_acc": [
+      0.7978,
+      0.7932,
+      0.8212,
+      0.8276,
+      0.8296
+    ],
+    "lr": [
+      0.001,
+      0.001,
+      0.001,
+      0.001,
+      0.001
+    ]
+  }
+}

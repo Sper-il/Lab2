@@ -1,0 +1,20 @@
+backbone: densenet121
+num_classes: 10
+weights_source: torchvision IMAGENET1K_V1 (DenseNet121_Weights.DEFAULT)
+head:
+  module: classifier
+  type: Linear
+  in_features: 1024
+  out_features: 10
+strategy:
+  freeze_backbone:
+    trainable: [classifier.weight, classifier.bias]
+    trainable_params: 10250
+  fine_tune:
+    freeze_until: 1
+    unfreezes: [features.denseblock4, features.norm5, classifier]
+    note: can fix get_module (commit 81fa425) vi features la Sequential key chuoi
+input_size: [3, 224, 224]
+run_ref: results/runs/20261030-023250/densenet121-lr0.001-bs32-0/
+test_accuracy: 0.8474
+macro_f1: 0.8468

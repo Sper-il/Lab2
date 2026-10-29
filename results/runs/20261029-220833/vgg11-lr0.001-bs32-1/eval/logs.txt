@@ -1,0 +1,2 @@
+2026-10-30 01:31:49,379 | INFO    | src.data.split | Split train/val: 45000 train / 5000 val (seed=42, 10 lớp)
+2026-10-30 01:31:50,171 | INFO    | src.data.dataloader | DataLoader: train=704 batch | val=79 batch | test=157 batch | workers=4
