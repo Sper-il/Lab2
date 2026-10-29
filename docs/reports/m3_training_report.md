@@ -47,8 +47,7 @@
 | Config | Epoch 1 | Ghi chú |
 |--------|---------|---------|
 | ResNet18 fine-tune, lr 1e-3 | **xong 5/5: best val 0.8296 @ ep5** (ep1 0.7978 → ep3 0.8212 → ep4 0.8276 → ep5 0.8296); train acc cuối 0.7988 | vượt xa freeze (0.53), đạt target tự đặt 0.80 ✅ |
-| VGG11 fine-tune | ep1: **val 0.8012**; ep2: **val 0.8142** (~1450s, *best*); ep3–5 đang chạy | VGG nặng (~122M trainable) nên ~25 phút/epoch |
-| VGG11 fine-tune | chờ | sau ResNet18 |
+| VGG11 fine-tune | **xong 5/5: best val 0.8316 @ ep5** (0.8012 → 0.8142 → 0.8194 → 0.8268 → 0.8316); train acc cuối 0.7913 | ngang ResNet18 FT (0.8296) ✅, eval đang chạy |
 | DenseNet121 fine-tune | chờ | cuối cùng |
 
 ## 5. TensorBoard
