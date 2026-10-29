@@ -44,4 +44,5 @@ Plots: `eval/confusion_matrix.png`, `eval/per_class_f1.png`.
 | Model | Test acc | Macro-F1 | Best val | Nguồn |
 |-------|----------|----------|----------|-------|
 | ResNet18 FT | **0.8273** ✅ | 0.8258 | 0.8296 @ ep5 | `20261029-220833/resnet18-*/eval/metrics.json` |
-| VGG11 FT | **0.8331** ✅ (tốt nhất) | 0.8305 | 0.8316 @ ep5 | `20261029-220833/vgg11-*/eval/metrics.json` |
+| VGG11 FT | **0.8331** ✅ | 0.8305 | 0.8316 @ ep5 | `20261029-220833/vgg11-*/eval/metrics.json` |
+| DenseNet121 FT | **0.8474** ✅ (tốt nhất sweep) | 0.8468 | 0.8524 @ ep4 | `20261030-023250/densenet121-*/eval/metrics.json` |

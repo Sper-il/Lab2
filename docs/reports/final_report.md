@@ -8,7 +8,7 @@
 - **Đề bài** (`đề.txt`): Practice 2 — nạp và fine-tune model pre-trained (`torchvision.models`), tinh chỉnh hyperparameter, theo dõi bằng TensorBoard.
 - **Bài toán cụ thể:** phân loại ảnh CIFAR-10 (10 lớp) bằng backbone ImageNet, so sánh transfer learning (freeze) vs fine-tuning (unfreeze lớp cuối).
 - **Môi trường:** Windows, Python 3.13.2, PyTorch 2.14.1+cpu / torchvision 0.29.1+cpu / tensorboard 2.21.0, **CPU-only** (không có GPU NVIDIA).
-- **Phạm vi báo cáo này:** M1 (data pipeline ✅) + M2 (model factory ✅) + M3 (training loop + TensorBoard ✅ code, ⏳ train thật đang chạy) + M4 (evaluation ✅ code, ⏳ chờ checkpoint). M5 (sweep) sau M3/M4 — xem §6.
+- **Phạm vi báo cáo này:** M1 (data pipeline ✅) + M2 (model factory ✅) + M3 (training loop + TensorBoard ✅ — 4 run thật Tier B) + M4 (evaluation ✅ — 4 eval thật) + M5 (sweep FT 3 model ✅).
 
 ## 2. Dữ liệu (M1 ✅)
 
@@ -59,15 +59,15 @@ Nguồn: `count_parameters()` sau `build_model()` với weights ImageNet thật 
 
 Chi tiết từng milestone: `docs/reports/m2_models_report.md` (M2). Demo chạy được: `notebooks/20261026_eda_cifar10_demo.ipynb`.
 
-## 5. Training (M3 — code ✅, train thật ⏳) & Evaluation (M4 — code ✅)
+## 5. Training (M3 ✅) & Evaluation (M4 ✅) — số thật Tier B
 
-- M3: `Trainer` (zero_grad→forward→loss→backward→step), `best.pt` theo val acc, TensorBoard scalar/histogram/grad/image; CLI sweep models×lr×bs; 13 test pass. Train thật Tier B (`results/runs/20261029-212336/`, ResNet18 freeze 64×64): epoch 1/5 — train 1.4501/0.4993, val 1.3911/0.5288 (~414s/epoch); epoch 2–5 đang chạy. Chi tiết: `docs/reports/m3_training_report.md`.
-- M4: `EvalResult` + `evaluate_model(device="cpu")` + plots `out_path` + CLI eval; 18 test pass. Eval thật Tier B: **test acc 0.5582, macro-F1 0.5535** (`eval/metrics.json` + 2 PNG); per-class thấp nhất cat 0.442 / deer 0.424; CM tổng = 10.000 ✓. Chi tiết: `docs/reports/m4_evaluation_report.md`.
+- M3: `Trainer` (zero_grad→forward→loss→backward→step), `best.pt` theo val acc, TensorBoard scalar/histogram/grad/image; CLI sweep models×lr×bs; 14 test pass (13 + `test_finetune_all_models` bắt bug B4). Train thật Tier B: R18 freeze best val 0.5654; R18 FT 0.8296; VGG FT 0.8316; Dense FT **0.8524**. Chi tiết: `docs/reports/m3_training_report.md`.
+- M4: `EvalResult` + `evaluate_model(device="cpu")` + plots `out_path` + CLI eval; 18 test pass. Eval thật: R18 freeze 0.5582 / R18 FT 0.8273 / VGG FT 0.8331 / Dense FT **0.8474** (macro-F1 0.8468). Chi tiết: `docs/reports/m4_evaluation_report.md`.
 
 ## 6. Hạn chế đã biết
 
-- **Accuracy Tier B (64×64)** thấp hơn Tier A (ảnh 64×64 mất chi tiết hơn 224×224) — báo cáo nêu rõ điều kiện, không trộn 2 bảng. Số thật Tier B ResNet18 freeze: best val **0.5654**, test **0.5582**, macro-F1 **0.5535** (chưa đạt target tự đặt 0.70 — đúng kỳ vọng vì ảnh nhỏ + chỉ train head).
-- **CPU-only nên train chậm** (đo thật run này: ~414s/epoch Tier B ResNet18 freeze; Tier A 224 ≈ 37 phút/epoch; VGG11 ≈ 144 phút/epoch — không khả thi). Vì vậy Tier B dùng để sweep, Tier A chỉ chạy ResNet18 khi có thời gian.
+- **Số thật Tier B (4 eval):** R18 freeze test 0.5582 (chưa đạt target 0.70 — đúng kỳ vọng ảnh nhỏ + chỉ train head); R18 FT 0.8273, VGG FT 0.8331, Dense FT **0.8474** — cả 3 FT đều đạt target tự đặt 0.80 ✅.
+- **CPU-only nên train chậm** (đo thật: FT R18 ~16 phút/epoch, VGG ~23 phút, Dense ~17 phút Tier B 64×64).
 - **Mới xong epoch 1/5** — số cuối (best val, test acc, macro-F1) chỉ có sau khi train + eval xong; sẽ điền vào README §8 + report này.
 - **Ảnh 32×32 upsample** — mất chi tiết, nhưng bắt buộc để dùng weights ImageNet.
 - **Mục tiêu accuracy là tự đặt** (freeze ≥ 0.70, fine-tune ≥ 0.80) — đề bài không cho ngưỡng.
@@ -76,9 +76,9 @@ Chi tiết từng milestone: `docs/reports/m2_models_report.md` (M2). Demo chạ
 
 | Module | Nội dung | Trạng thái |
 |--------|----------|-----------|
-| M3 train | 5/5 epoch xong → `best.pt` (best val 0.5654 @ ep4) + `metrics.json` + `tb/` | ✅ xong |
-| M4 eval | test acc **0.5582**, macro-F1 **0.5535** + 2 PNG | ✅ xong |
-| M5 | Sweep lr/batch/optimizer + Tier B 64×64 + bảng so sánh, điền mục 8 Results trong `README.md` | ⏳ bước tiếp |
+| M3 train | 5/5 xong cả 4 config (freeze R18 + FT R18/VGG/Dense) → `best.pt` + `metrics.json` + `tb/` | ✅ xong |
+| M4 eval | R18 freeze 0.5582 / R18 FT 0.8273 / VGG FT 0.8331 / Dense FT **0.8474** + PNG | ✅ xong |
+| M5 | Sweep Tier B FT 3 model xong — bảng so sánh đầy trong README §8 + dưới đây | ✅ xong |
 
 ## Phụ lục — file & commit
 
