@@ -24,12 +24,17 @@
 | `src/evaluation/test_metrics.py` (13 test) | acc/macro-F1/confusion/per-class/report — PASS |
 | `src/evaluation/test_evaluation.py` (5 test) | end-to-end, schema JSON, plots, checkpoint reload, tổng CM = n_samples — PASS |
 
-## 4. Kết quả eval thật
+## 4. Kết quả eval thật (Tier B, ResNet18 freeze 64×64 → test 10.000 mẫu)
 
-Chờ train Tier B xong (`results/runs/20261029-212336/.../checkpoints/best.pt`) rồi chạy:
+`results/runs/20261029-212336/resnet18-lr0.001-bs32-0/eval/metrics.json`:
 
-```powershell
-.\.venv\Scripts\python.exe -m src.evaluation --config configs/eval_config.yaml --checkpoint results/runs/20261029-212336/resnet18-lr0.001-bs32-0/checkpoints/best.pt
-```
+| Metric | Giá trị |
+|--------|---------|
+| Test accuracy | **0.5582** |
+| Macro-F1 | **0.5535** |
+| Inference | 4.31 ms/mẫu (CPU) |
+| Best val (train) | 0.5654 @ epoch 4/5 |
 
-Kết quả sẽ điền vào bảng dưới + `final_report.md` + README §8 sau khi chạy xong.
+Per-class F1 thấp nhất: cat (lớp 3) 0.442, deer (lớp 4) 0.424 — đúng cặp dễ nhầm cổ điển của CIFAR-10; cao nhất: automobile (lớp 1) 0.667, ship (lớp 8) 0.622. Confusion matrix tổng = 10.000 = số mẫu test ✓.
+
+Plots: `eval/confusion_matrix.png`, `eval/per_class_f1.png`.

@@ -72,7 +72,8 @@ def plot_per_class_f1(metrics, out_path=None):
     scores = [metrics[c]["f1"] for c in class_ids]
 
     fig, ax = plt.subplots(figsize=(9, 5))
-    ax.bar([str(c) for c in class_ids], scores)
+    x = [int(c) if str(c).isdigit() else c for c in class_ids]
+    ax.bar(x, scores)
 
     ax.set(
         xlabel="Class",

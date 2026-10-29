@@ -62,11 +62,11 @@ Chi tiết từng milestone: `docs/reports/m2_models_report.md` (M2). Demo chạ
 ## 5. Training (M3 — code ✅, train thật ⏳) & Evaluation (M4 — code ✅)
 
 - M3: `Trainer` (zero_grad→forward→loss→backward→step), `best.pt` theo val acc, TensorBoard scalar/histogram/grad/image; CLI sweep models×lr×bs; 13 test pass. Train thật Tier B (`results/runs/20261029-212336/`, ResNet18 freeze 64×64): epoch 1/5 — train 1.4501/0.4993, val 1.3911/0.5288 (~414s/epoch); epoch 2–5 đang chạy. Chi tiết: `docs/reports/m3_training_report.md`.
-- M4: `EvalResult` + `evaluate_model(device="cpu")` + plots `out_path` + CLI eval; 18 test pass. Eval thật chờ `best.pt` rồi chạy `python -m src.evaluation --checkpoint ...`. Chi tiết: `docs/reports/m4_evaluation_report.md`.
+- M4: `EvalResult` + `evaluate_model(device="cpu")` + plots `out_path` + CLI eval; 18 test pass. Eval thật Tier B: **test acc 0.5582, macro-F1 0.5535** (`eval/metrics.json` + 2 PNG); per-class thấp nhất cat 0.442 / deer 0.424; CM tổng = 10.000 ✓. Chi tiết: `docs/reports/m4_evaluation_report.md`.
 
 ## 6. Hạn chế đã biết
 
-- **Accuracy Tier B thấp hơn Tier A** (ảnh 64×64 mất chi tiết hơn 224×224) — báo cáo nêu rõ điều kiện, không trộn 2 bảng.
+- **Accuracy Tier B (64×64)** thấp hơn Tier A (ảnh 64×64 mất chi tiết hơn 224×224) — báo cáo nêu rõ điều kiện, không trộn 2 bảng. Số thật Tier B ResNet18 freeze: best val **0.5654**, test **0.5582**, macro-F1 **0.5535** (chưa đạt target tự đặt 0.70 — đúng kỳ vọng vì ảnh nhỏ + chỉ train head).
 - **CPU-only nên train chậm** (đo thật run này: ~414s/epoch Tier B ResNet18 freeze; Tier A 224 ≈ 37 phút/epoch; VGG11 ≈ 144 phút/epoch — không khả thi). Vì vậy Tier B dùng để sweep, Tier A chỉ chạy ResNet18 khi có thời gian.
 - **Mới xong epoch 1/5** — số cuối (best val, test acc, macro-F1) chỉ có sau khi train + eval xong; sẽ điền vào README §8 + report này.
 - **Ảnh 32×32 upsample** — mất chi tiết, nhưng bắt buộc để dùng weights ImageNet.
@@ -76,9 +76,9 @@ Chi tiết từng milestone: `docs/reports/m2_models_report.md` (M2). Demo chạ
 
 | Module | Nội dung | Trạng thái |
 |--------|----------|-----------|
-| M3 train | chờ epoch 2–5 xong → lấy `best.pt` + `metrics.json` | ⏳ đang chạy |
-| M4 eval | chạy `python -m src.evaluation --checkpoint <best.pt>` → `metrics.json` + PNG | ⏳ chờ checkpoint |
-| M5 | Sweep lr/batch/optimizer + Tier B 64×64 + bảng so sánh, điền mục 8 Results trong `README.md` | Sau M3/M4 |
+| M3 train | 5/5 epoch xong → `best.pt` (best val 0.5654 @ ep4) + `metrics.json` + `tb/` | ✅ xong |
+| M4 eval | test acc **0.5582**, macro-F1 **0.5535** + 2 PNG | ✅ xong |
+| M5 | Sweep lr/batch/optimizer + Tier B 64×64 + bảng so sánh, điền mục 8 Results trong `README.md` | ⏳ bước tiếp |
 
 ## Phụ lục — file & commit
 

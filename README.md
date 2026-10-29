@@ -351,33 +351,33 @@ images, labels = next(iter(train_loader))
 # images: torch.float32 [64, 3, 224, 224] | labels: torch.int64 [64]
 ```
 
-**Output**
+**Output** (số thật Tier B: ResNet18 freeze 64x64, `results/runs/20261029-212336/`)
 
-> ⚠️ **Schema dự kiến** — chưa có số liệu thật cho tới khi hoàn thành M3–M4. Các giá trị số dưới đây là **placeholder minh hoạ định dạng**, không phải kết quả đo được. File `metrics.json` thực tế sẽ được sinh ra sau khi train.
+> Test 10.000 mẫu: acc 0.5582, macro-F1 0.5535. Per-class F1 thấp nhất: cat 0.442 / deer 0.424; cao nhất: automobile 0.667 / ship 0.622.
 
 ```json
 {
   "model": "resnet18",
   "strategy": "freeze_backbone",
   "epochs": 5,
-  "best_val_accuracy": 0.0,
-  "test_accuracy": 0.0,
-  "macro_f1": 0.0,
+  "best_val_accuracy": 0.5654,
+  "test_accuracy": 0.5582,
+  "macro_f1": 0.5535,
   "params_total": 11181642,
   "params_trainable": 5130,
-  "inference_time_ms_per_sample": 0.0
+  "inference_time_ms_per_sample": 4.31
 }
 
-> `params_total` / `params_trainable` là số **đo thật** của ResNet18 + freeze (`results/runs/20261026-115633/model_info.json`); các metric accuracy vẫn là 0.0 cho tới khi train xong M3.
+> Số đo thật từ `eval/metrics.json` (test 10.000 mẫu, Tier B 64x64).
 ```
 
 ## 8. Results
 
-Bảng so sánh được điền sau khi chạy; nguồn chuẩn: `results/runs/<timestamp>/metrics.json`.
+Bảng Tier B (64x64) — nguồn: `results/runs/20261029-212336/.../eval/metrics.json`. Tier B ảnh nhỏ nên accuracy thấp hơn Tier A 224x224 — không trộn 2 bảng.
 
 | Model | Strategy | LR | Batch | Epoch | Val Acc | Test Acc | Macro F1 | Run |
 |-------|----------|----|-------|-------|---------|----------|---------|-----|
-| ResNet18 | freeze backbone | 1e-3 | 64 | 5 | TBD | TBD | TBD | — |
+| ResNet18 | freeze backbone | 1e-3 | 32 | 5 | 0.5654 | 0.5582 | 0.5535 | `20261029-212336` |
 | ResNet18 | fine-tune block4 | 1e-4 | 64 | 5 | TBD | TBD | TBD | — |
 | VGG11 | freeze backbone | 1e-3 | 64 | 5 | TBD | TBD | TBD | — |
 | DenseNet121 | freeze backbone | 1e-3 | 64 | 5 | TBD | TBD | TBD | — |

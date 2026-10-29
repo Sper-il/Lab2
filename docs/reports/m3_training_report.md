@@ -34,8 +34,13 @@
 
 | Epoch | Train loss/acc | Val loss/acc | Ghi chú |
 |-------|----------------|--------------|---------|
-| 1/5 | 1.4501 / 0.4993 | 1.3911 / 0.5288 | ~414s/epoch, *best* — run `results/runs/20261029-212336/resnet18-lr0.001-bs32-0/` |
-| 2–5 | đang chạy | đang chạy | sẽ điền khi xong |
+| 1/5 | 1.4501 / 0.4993 | 1.3911 / 0.5288 | ~414s, *best* — run `results/runs/20261029-212336/resnet18-lr0.001-bs32-0/` |
+| 2/5 | 1.3327 / 0.5416 | 1.3851 / 0.5336 | ~390s, *best* |
+| 3/5 | 1.3248 / 0.5460 | 1.3150 / 0.5628 | ~364s, *best* |
+| 4/5 | 1.3144 / 0.5486 | 1.2952 / 0.5654 | ~557s, *best* |
+| 5/5 | 1.3099 / 0.5505 | 1.3531 / 0.5554 | ~356s (val tăng nhẹ — best vẫn epoch 4) |
+
+**Best:** val acc **0.5654** ở epoch 4/5; `checkpoints/best.pt` (44.8 MB) + `last.pt`; `metrics.json` + `config.yaml` + `logs.txt` + `tb/` trong `results/runs/20261029-212336/resnet18-lr0.001-bs32-0/`.
 
 ## 5. TensorBoard
 
