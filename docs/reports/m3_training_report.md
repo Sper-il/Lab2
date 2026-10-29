@@ -42,6 +42,14 @@
 
 **Best:** val acc **0.5654** ở epoch 4/5; `checkpoints/best.pt` (44.8 MB) + `last.pt`; `metrics.json` + `config.yaml` + `logs.txt` + `tb/` trong `results/runs/20261029-212336/resnet18-lr0.001-bs32-0/`.
 
+## 5. Sweep fine-tune Tier B (đang chạy — run `20261029-220833`, 3 config)
+
+| Config | Epoch 1 | Ghi chú |
+|--------|---------|---------|
+| ResNet18 fine-tune, lr 1e-3 | train 0.8830/0.6992, **val 0.5776/0.7978** (~966s) | *best* — vượt xa freeze (0.53) đúng kỳ vọng O5 |
+| VGG11 fine-tune | chờ | sau ResNet18 |
+| DenseNet121 fine-tune | chờ | cuối cùng |
+
 ## 5. TensorBoard
 
 Mở bằng `.\.venv\Scripts\tensorboard.exe --logdir results/runs/20261029-212336/resnet18-lr0.001-bs32-0/tb` → http://localhost:6006/ — các tag `train/loss`, `train/accuracy`, `val/loss`, `val/accuracy`, `lr`, `model/grad_norm`, `samples/train_images`.
