@@ -124,8 +124,15 @@ def get_module(model: nn.Module, path: str) -> nn.Module:
     """
     obj: object = model
     for part in path.split("."):
-        if isinstance(obj, (list, tuple, nn.Sequential)):
-            obj = obj[int(part)]
-        else:
+        if isinstance(obj, nn.Module) and hasattr(obj, part):
+            # Uu tien attribute (VD: features.denseblock4 cua DenseNet,
+            # layer4 cua ResNet) — dung ca khi parent la Sequential
+            # nhung key la ten chuoi thay vi chi so.
             obj = getattr(obj, part)
+        elif isinstance(obj, (list, tuple, nn.Sequential)) and part.isdigit():
+            obj = obj[int(part)]
+        elif isinstance(obj, nn.Module) and part in obj._modules:
+            obj = obj._modules[part]
+        else:
+            obj = getattr(obj, part)  # raise AttributeError ro rang
     return obj  # type: ignore[return-value]

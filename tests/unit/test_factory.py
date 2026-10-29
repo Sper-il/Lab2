@@ -174,3 +174,25 @@ def test_describe_model_runs() -> None:
     text = describe_model(model, full=False)
     assert "ResNet" in text
     assert "Total parameters" in text
+
+
+def test_finetune_all_models() -> None:
+    """fine_tune phai chay duoc cho ca 3 model (bat bug get_module DenseNet).
+
+    Bug that: get_module(model, 'features.denseblock4') crash vi code
+    cu ep int(part) khi parent la Sequential — trong khi key cua DenseNet
+    features la chuoi ('denseblock4'), khong phai chi so.
+    """
+    from src.models.registry import get_module
+
+    for name in ("resnet18", "vgg11", "densenet121"):
+        model = build_model(
+            ModelConfig(name=name, strategy="fine_tune", freeze_until=1, weights=None)
+        )
+        n = count_parameters(model)["params_trainable"]
+        assert n > 0, name
+
+    raw = _build_raw("densenet121")
+    assert get_module(raw, "features.denseblock4") is raw.features.denseblock4
+    assert get_module(raw, "features.transition3") is raw.features.transition3
+    assert get_module(raw, "features.norm5") is raw.features.norm5
