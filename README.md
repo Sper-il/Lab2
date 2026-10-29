@@ -118,9 +118,9 @@ Công cụ: PyTorch 2.x + torchvision + TensorBoard.
      accuracy / F1 / confusion matrix → results/runs/<ts>/metrics.json
 ```
 
-Chi tiết luồng dữ liệu: xem `docs/data-flow.md` (đã viết cho M1).
+Chi tiết luồng dữ liệu: xem `docs/data-flow.md` (M1) + `docs/plan-m2-m4.md` (M2–M4).
 
-> Sơ đồ trên mô tả **thiết kế đích** của toàn bộ pipeline. Phần đã hiện thực (M1) là khối `[CIFAR-10] → [Transforms] → [DataLoader]`; các khối còn lại thuộc M2–M4.
+> Sơ đồ trên là pipeline **đã hiện thực đầy đủ M1–M4**: data (M1 ✅) → factory 3 backbone + freeze/unfreeze (M2 ✅) → training loop + TensorBoard + `best.pt` (M3 ✅, run thật `20261029-212336`) → test evaluation + `metrics.json` + PNG (M4 ✅).
 
 ## 5. Folder Structure
 
@@ -147,10 +147,17 @@ lab2/
 │   │   ├── __main__.py    # CLI: python -m src.models --model <name>
 │   │   ├── registry.py    # BACKBONE_REGISTRY, block_units, resolve_spec
 │   │   └── factory.py     # build_model, replace_head, freeze/unfreeze, count/describe
-│   ├── training/          # training loop, scheduler, checkpoint  ⏳ M3
-│   │   └── trainer.py     # (chưa tạo)
-│   └── evaluation/        # metrics, confusion matrix, visualize  ⏳ M4
-│       └── metrics.py     # (chưa tạo)
+│   ├── training/          # training loop, scheduler, checkpoint  ✅ M3
+│   │   ├── trainer.py     # TrainConfig + Trainer (train/val/checkpoint/TB)
+│   │   ├── loss.py        # build_criterion (CE/label-smoothing/focal)
+│   │   ├── optimizer.py   # build_optimizer (chi params trainable)
+│   │   ├── scheduler.py   # build_scheduler (none/cosine/step/plateau)
+│   │   ├── tensorboard_utils.py  # scalar/histogram/grad/image/graph
+│   │   └── __main__.py    # CLI train + sweep models×lr×bs
+│   └── evaluation/        # metrics, confusion matrix, visualize  ✅ M4
+│       ├── metrics.py     # EvalResult + evaluate_model + report
+│       ├── visualize.py   # plot CM / per-class F1 / PR / misclassified
+│       └── __main__.py    # CLI eval: checkpoint → metrics.json + PNG
 │
 ├── models/
 │   ├── checkpoints/       # best.pt theo từng run (gitignore)
@@ -159,18 +166,24 @@ lab2/
 │
 ├── notebooks/             # EDA + demo: 20261026_eda_cifar10_demo.ipynb (M2b)
 ├── tests/
-│   ├── unit/              # test transforms, split, dataset, prepare, factory (M2)
+│   ├── unit/              # M1 (transforms/split/dataset/prepare) + M2 (factory) + M3 (training_components)
 │   │   ├── test_transforms.py
 │   │   ├── test_split.py
 │   │   ├── test_dataset.py
 │   │   ├── test_prepare.py
-│   │   └── test_factory.py        # 17 test M2
-│   └── integration/       # test end-to-end DataLoader + model pipeline (M2)
+│   │   ├── test_factory.py        # 17 test M2
+│   │   └── test_training_components.py  # 9 test M3
+│   └── integration/       # M1 (dataloader) + M2 (model_pipeline) + M3 (training_loop)
 │       ├── test_dataloader_pipeline.py
-│       └── test_model_pipeline.py # 6 test M2
+│       ├── test_model_pipeline.py # 6 test M2
+│       └── test_training_loop.py  # 4 test M3
 │
-├── docs/                  # data-flow.md (M1), plan-m2-m4.md, reports/m2_models_report.md + final_report.md (M2), AUDIT_LOG.md
-├── configs/               # data_config.yaml ✅ | model_config.yaml ✅ M2 | train_config.yaml, eval_config.yaml ⏳
+├── src/evaluation/ test nhóm (giữ nguyên theo yêu cầu):
+│   ├── test_metrics.py      # 13 test M4
+│   └── test_evaluation.py   # 5 test M4
+│
+├── docs/                  # data-flow.md (M1), plan-m2-m4.md, reports/m2_models_report.md + m3_training_report.md + m4_evaluation_report.md + final_report.md, AUDIT_LOG.md
+├── configs/               # data_config.yaml ✅ | model_config.yaml ✅ M2 | train_config.yaml ✅ M3 | eval_config.yaml ✅ M4
 ├── results/runs/<ts>/     # metrics.json, config.yaml, logs.txt, plots/
 │
 ├── .venv/                 # môi trường ảo Python 3.13 (gitignore)

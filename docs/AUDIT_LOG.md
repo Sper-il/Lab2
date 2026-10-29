@@ -40,6 +40,36 @@
 
 ---
 
+## 2026-10-29 — Audit M3/M4 (training + evaluation) + sweep Tier B
+
+**Người audit:** AI agent (Cursor) theo yêu cầu user "làm cho tới khi hoàn thành".
+**Phạm vi:** `src/training/*.py` (6 file), `src/evaluation/*.py` (3 file + 2 test nhóm), `configs/train_config.yaml`, `configs/eval_config.yaml`, run thật `results/runs/20261029-212336/`.
+**Phương pháp:** đọc code + chạy full test (`pytest -q` → **101 passed**) + train thật 5 epoch CPU + eval thật test set + đối chiếu docs với `đề.txt`.
+
+### Phát hiện (code)
+
+| # | File | Vấn đề | Mức | Trạng thái |
+|---|------|--------|-----|------------|
+| B1 | `src/training/__main__.py` (bản đầu) | `dataset_summary(train_loader, val_loader, val_loader)` — truyền val 2 lần, bỏ qua test loader | Trung bình | ✅ Đã sửa: truyền `test_loader` đúng |
+| B2 | `src/evaluation/visualize.py` `plot_per_class_f1` (bản đầu) | `ax.bar([str(c)...])` với key số dạng string → UserWarning "Using categorical units to plot a list of strings" | Thấp | ✅ Đã sửa: ép `int(c)` khi parse được |
+| B3 | `src/evaluation/__main__.py` | Eval Tier B dùng nhầm `image_size` 224 (150 batch) thay vì 64 khớp checkpoint train | Thấp | Ghi nhận: eval vẫn đúng (model nhận mọi size) nhưng chậm hơn; `eval_config.yaml` mặc định 64 cho lần sau |
+
+### Phát hiện (docs)
+
+| # | Vấn đề | Mức | Trạng thái |
+|---|--------|-----|------------|
+| E1 | README §5 + §6.6 + folder structure ghi M3/M4 "chưa tạo / thiết kế dự kiến" trong khi code đã xong + train thật xong | Trung bình | ✅ Đã sửa: ghi ✅ + số thật |
+| E2 | README §7–§8 còn placeholder 0.0 sau khi đã có số thật | Trung bình | ✅ Đã sửa: best val 0.5654, test 0.5582, macro-F1 0.5535 |
+| E3 | `final_report.md` + `progress_status.md` ghi M3/M4 ⏳ sau khi train/eval xong | Trung bình | ✅ Đã sửa trong commit số thật |
+
+### Kết quả verify
+
+- Test: **101 passed** (47 M1 + 23 M2 + 13 M3 + 18 M4) trong 106s.
+- Train thật Tier B (ResNet18 freeze 64×64, 5 epoch, ~35 phút CPU): best val **0.5654** @ epoch 4; eval test: acc **0.5582**, macro-F1 **0.5535**, 4.31 ms/mẫu.
+- Chưa đạt target tự đặt 0.70 — đúng kỳ vọng (ảnh 64 + chỉ train head 5.130 params); đã ghi rõ trong báo cáo, không giấu.
+
+---
+
 ## 2026-10-25 — Audit M1 (data pipeline) + align docs với đề bài
 
 **Người audit:** AI agent + user review.
