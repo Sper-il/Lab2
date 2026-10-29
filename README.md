@@ -391,7 +391,7 @@ Bảng Tier B (64x64) — nguồn: `results/runs/20261029-212336/.../eval/metric
 | Model | Strategy | LR | Batch | Epoch | Val Acc | Test Acc | Macro F1 | Run |
 |-------|----------|----|-------|-------|---------|----------|---------|-----|
 | ResNet18 | freeze backbone | 1e-3 | 32 | 5 | 0.5654 | 0.5582 | 0.5535 | `20261029-212336` |
-| ResNet18 | fine-tune block4 | 1e-4 | 64 | 5 | TBD | TBD | TBD | — |
+| ResNet18 | fine-tune block4 | 1e-3 | 32 | 5 | 0.8296 | 0.8273 | 0.8258 | `20261029-220833` |
 | VGG11 | freeze backbone | 1e-3 | 64 | 5 | TBD | TBD | TBD | — |
 | DenseNet121 | freeze backbone | 1e-3 | 64 | 5 | TBD | TBD | TBD | — |
 

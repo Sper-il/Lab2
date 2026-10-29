@@ -46,7 +46,8 @@
 
 | Config | Epoch 1 | Ghi chú |
 |--------|---------|---------|
-| ResNet18 fine-tune, lr 1e-3 | train 0.8830/0.6992, **val 0.5776/0.7978** (~966s) | *best* — vượt xa freeze (0.53) đúng kỳ vọng O5 |
+| ResNet18 fine-tune, lr 1e-3 | **xong 5/5: best val 0.8296 @ ep5** (ep1 0.7978 → ep3 0.8212 → ep4 0.8276 → ep5 0.8296); train acc cuối 0.7988 | vượt xa freeze (0.53), đạt target tự đặt 0.80 ✅ |
+| VGG11 fine-tune | đang chạy (config 2/3) | sau ResNet18 |
 | VGG11 fine-tune | chờ | sau ResNet18 |
 | DenseNet121 fine-tune | chờ | cuối cùng |
 

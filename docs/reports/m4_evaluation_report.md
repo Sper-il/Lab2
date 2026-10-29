@@ -38,3 +38,13 @@
 Per-class F1 thấp nhất: cat (lớp 3) 0.442, deer (lớp 4) 0.424 — đúng cặp dễ nhầm cổ điển của CIFAR-10; cao nhất: automobile (lớp 1) 0.667, ship (lớp 8) 0.622. Confusion matrix tổng = 10.000 = số mẫu test ✓.
 
 Plots: `eval/confusion_matrix.png`, `eval/per_class_f1.png`.
+
+## 5. Kết quả eval FT ResNet18 (Tier B fine-tune — test 10.000 mẫu)
+
+`results/runs/20261029-220833/resnet18-lr0.001-bs32-0/eval/metrics.json`:
+
+| Metric | Giá trị |
+|--------|---------|
+| Test accuracy | **0.8273** ✅ (đạt target tự đặt 0.80) |
+| Macro-F1 | **0.8258** |
+| Best val (train) | 0.8296 @ epoch 5/5 |
