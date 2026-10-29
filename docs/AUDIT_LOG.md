@@ -68,6 +68,13 @@
 - Train thật Tier B (ResNet18 freeze 64×64, 5 epoch, ~35 phút CPU): best val **0.5654** @ epoch 4; eval test: acc **0.5582**, macro-F1 **0.5535**, 4.31 ms/mẫu.
 - Chưa đạt target tự đặt 0.70 — đúng kỳ vọng (ảnh 64 + chỉ train head 5.130 params); đã ghi rõ trong báo cáo, không giấu.
 
+### Phát hiện bổ sung (2026-10-30 — sweep fine-tune)
+
+| # | File | Vấn đề | Mức | Trạng thái |
+|---|------|--------|-----|------------|
+| B4 | `src/models/registry.py` `get_module` | Ép `int(part)` khi parent là Sequential → crash với `features.denseblock4` của DenseNet (key là chuỗi, không phải chỉ số). ResNet (`layer4`) và VGG (`features.18`) thoát vì path toàn attribute/số | Cao | ✅ Đã sửa: ưu tiên `getattr` trước, fallback index/`_modules` sau; verify cả 3 model × 2 strategy + test `test_finetune_all_models` mới |
+| B5 | Sweep Tier B FT (2026-10-29) | DenseNet FT crash ở config 3/3 → mất trắng config đó (ResNet/VGG đã xong不受 ảnh hưởng) | Trung bình | ✅ Chạy lại riêng DenseNet (run `20261030-023250`) sau fix B4 |
+
 ---
 
 ## 2026-10-25 — Audit M1 (data pipeline) + align docs với đề bài
