@@ -81,7 +81,7 @@ Chi tiết từng milestone: `docs/reports/m2_models_report.md` (M2). Demo chạ
 
 ## Phụ lục — file & commit
 
-- Commit: `f130862` (scaffold) → `d0321eb` + `28aa1ff` (M1) → `a1a6b71` (align đề) → `75455dd` (M2) → `390b21d` (M3/M4 code) → `cd5b75d` (docs M3/M4).
+- Commit: `f130862` (scaffold) → `d0321eb`+`28aa1ff` (M1) → `a1a6b71` (align đề) → `75455dd` (M2) → `390b21d` (M3/M4 code) → `81fa425` (fix B4) → `c78f84e` (sweep FT: Dense test **0.8474**) → `c8b6fff` (models/ + artifact FT) → `5b810f0` (đối chiếu đề+slide, sweep E2: lr 1e-3 tối ưu freeze).
 - Code: `src/data/` (7 file), `src/models/` (4 file), `src/training/` (6 file), `src/evaluation/` (3 file + 2 test nhóm), `src/utils/` (2 file), `scripts/` (4 file).
 - Test: 102 passed (47 M1 + 24 M2 + 13 M3 + 18 M4) — gồm `test_finetune_all_models` bắt bug B4 (DenseNet `get_module`).
 - Audit: `docs/AUDIT_LOG.md`. Demo: `notebooks/20261026_eda_cifar10_demo.ipynb`. Reports: `m2_models_report.md`, `m3_training_report.md`, `m4_evaluation_report.md`.

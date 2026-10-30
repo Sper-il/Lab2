@@ -103,11 +103,11 @@ Bước 1 (Environment Setup) — ✅ xong: `requirements.txt` pin torch 2.14.1 
 | 0b | M0b — Dataset CIFAR-10 | 2026-10-25 | ✅ | — | Tải + giải nén + verify: 50k train / 10k test, 10 lớp cân bằng, ảnh 32×32 |
 | 1 | M1 — Data pipeline (dataset/transforms/split) | 2026-10-25 | ✅ | `d0321eb` + `28aa1ff` | 45k/5k/10k stratified seed=42; ảnh [B,3,224,224] float32; 47 test pass; run `20261025-150847` |
 | 1b | M1b — Docs align với `đề.txt` | 2026-10-25 | ✅ | `a1a6b71` | Ma trận truy vết 14 yêu cầu đề; sửa shape, số liệu bịa, path không tồn tại; thêm MD5 check cho `verify_data.py` |
-| 2 | M2 — Model factory (backbone/head/freeze) | 2026-10-26 | ✅ | `75455dd` | `registry.py` + `factory.py` + CLI khám phá; 23 test pass (17 unit + 6 integration); verify weights thật cả 3 model; report `docs/reports/m2_models_report.md` |
+| 2 | M2 — Model factory (backbone/head/freeze) | 2026-10-26 | ✅ | `75455dd` (+`81fa425` fix B4) | `registry.py` + `factory.py` + CLI khám phá; 24 test pass (18 unit + 6 integration); verify weights thật cả 3 model; report `docs/reports/m2_models_report.md` |
 | 2b | M2b — Docs bổ sung (notebook/audit/final report) | 2026-10-26 | ✅ | (commit này) | `notebooks/20261026_eda_cifar10_demo.ipynb` + `docs/AUDIT_LOG.md` + `docs/reports/final_report.md`; sửa D1–D5 trong audit |
 | 3 | M3 — Training loop + TensorBoard | 2026-10-29 | ✅ | `390b21d` | `trainer.py` (zero_grad→forward→loss→backward→step), loss/opt/scheduler/tb_utils, CLI sweep models×lr×bs; 14 test pass; 4 run thật Tier B: R18 freeze val 0.5654 + FT 3 model (R18 0.8296 / VGG 0.8316 / Dense 0.8524) |
 | 4 | M4 — Evaluation & metrics | 2026-10-30 | ✅ | — | `EvalResult` + `evaluate_model(device=cpu)` + `out_path` plots + CLI eval + `eval_config.yaml`; 18 test pass; 4 eval thật (freeze 0.5582 / R18 FT 0.8273 / VGG FT 0.8331 / Dense FT 0.8474) |
-| 5 | M5 — Experiment sweep + báo cáo | 2026-10-30 | ✅ | — | Sweep FT 3 model xong + sweep E2 grid 2×2 (lr×bs) đang chạy `20261030-043458`; bảng so sánh README §8 |
+| 5 | M5 — Experiment sweep + báo cáo | 2026-10-30 | ✅ | `5b810f0` | Sweep FT 3 model xong (Dense **0.8474** tốt nhất) + sweep E2 grid 2×2 `20261030-043458` xong (lr 1e-3 tối ưu freeze, val 0.5654); bảng so sánh README §8 |
 
 > **Kế hoạch chi tiết M2–M4:** `docs/plan-m2-m4.md` — danh sách file, chức năng từng hàm, code mẫu đã kiểm chứng, test, tiêu chí hoàn thành, và ước lượng thời gian train **đã đo thật** trên máy này.
 
@@ -169,10 +169,10 @@ Bước 1 (Environment Setup) — ✅ xong: `requirements.txt` pin torch 2.14.1 
 
 - [x] Đúng yêu cầu
 - [x] Code chạy end-to-end
-- [x] Tests pass (47/47 — 36 data pipeline + 11 prepare; M2: 23/23 — 17 factory + 6 pipeline, tổng 70)
-- [x] Không có secrets / không có artifact lớn
+- [x] Tests pass — **102/102** (47 M1 + 24 M2 + 13 M3 + 18 M4; `pytest -q` ~96s)
+- [x] Không có secrets; không push artifact nặng (`*.pt` ~590 MB local-only, `tb/` local-only — `metrics.json`/PNG/config đã push)
 - [x] Code đã self-review
 - [x] Có thể giải thích được
 - [x] Docs đã cập nhật (README, `docs/progress_status.md`, `docs/AI_Usage.md`)
 - [x] **Docs bám sát `đề.txt`** — mục "Đối chiếu với đề bài" trong `README.md` và `docs/progress_status.md` được cập nhật mỗi milestone
-- [x] Đã committed (Conventional Commit) — `f130862` (M0), `d0321eb` (M1), `28aa1ff` (prepare), `a1a6b71` (docs align đề), `75455dd` (M2), (commit này: M2b notebook + audit + final report)
+- [x] Đã committed (Conventional Commit) — `f130862` (M0), `d0321eb`+`28aa1ff` (M1), `a1a6b71` (docs align đề), `75455dd` (M2), `390b21d` (M3/M4 code), `c78f84e` (sweep FT), `c8b6fff` (models/), `5b810f0` (đối chiếu đề+slide, sweep E2)
