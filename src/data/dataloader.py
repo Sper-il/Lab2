@@ -42,8 +42,8 @@ class DataLoaderConfig:
     val_size: int = 5_000
     seed: int = 42
     augment: bool = True
-    pin_memory: bool = False
-    persistent_workers: bool = False
+    pin_memory: bool = True
+    persistent_workers: bool = True
     download: bool = False
     in_memory: bool = True
 
@@ -59,7 +59,7 @@ def _safe_num_workers(requested: int) -> int:
     """
     cpu_count = os.cpu_count() or 1
     if cpu_count <= 2:
-        return 0
+        return max(0, min(requested, 2))
     return max(0, min(requested, cpu_count - 1))
 
 
