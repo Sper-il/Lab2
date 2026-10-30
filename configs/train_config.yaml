@@ -9,14 +9,15 @@ train:
   num_classes: 10
   epochs: 5
   batch_size: 32
+  num_workers: 2
   lr: 0.001
   optimizer: adam
+  use_amp: true
   weight_decay: 0.0001
   momentum: 0.9
   scheduler: none
   loss: cross_entropy
   label_smoothing: 0.0
-  num_workers: 4
   seed: 42
   device: auto
   image_size: 64

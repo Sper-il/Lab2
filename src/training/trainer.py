@@ -53,6 +53,7 @@ class TrainConfig:
     seed: int = 42
     device: str = "auto"
     image_size: int = 224
+    use_amp: bool = True
     early_stopping_patience: int = 0
     log_images: bool = True
     log_histograms: bool = True
@@ -83,6 +84,8 @@ class Trainer:
         self.run_dir = Path(run_dir) if run_dir is not None else Path("results/runs")
         self.device = config.resolved_device()
         self.model.to(self.device)
+        self.use_amp = bool(config.use_amp) and self.device == "cuda"
+        self.scaler = torch.amp.GradScaler("cuda") if self.use_amp else None
 
         self.criterion = build_criterion(config.loss, config.label_smoothing)
         self.optimizer = build_optimizer(
@@ -114,14 +117,23 @@ class Trainer:
         total_loss, correct, total = 0.0, 0, 0
         logged_images = False
         for images, labels in self.train_loader:
-            images = images.to(self.device)
-            labels = labels.to(self.device).long().reshape(-1)
+            images = images.to(self.device, non_blocking=True)
+            labels = labels.to(self.device, non_blocking=True).long().reshape(-1)
 
             self.optimizer.zero_grad()  # 1
-            outputs = self.model(images)  # 2 forward
-            loss = self.criterion(outputs, labels)  # 3 loss
-            loss.backward()  # 4 backward
-            self.optimizer.step()  # 5 step
+            if self.use_amp:
+                with torch.autocast(device_type="cuda", dtype=torch.float16):
+                    outputs = self.model(images)  # 2 forward
+                    loss = self.criterion(outputs, labels)  # 3 loss
+                assert self.scaler is not None
+                self.scaler.scale(loss).backward()  # 4 backward
+                self.scaler.step(self.optimizer)  # 5 step
+                self.scaler.update()
+            else:
+                outputs = self.model(images)  # 2 forward
+                loss = self.criterion(outputs, labels)  # 3 loss
+                loss.backward()  # 4 backward
+                self.optimizer.step()  # 5 step
 
             batch = labels.size(0)
             total_loss += float(loss.item()) * batch
@@ -146,8 +158,8 @@ class Trainer:
         self.model.eval()
         total_loss, correct, total = 0.0, 0, 0
         for images, labels in self.val_loader:
-            images = images.to(self.device)
-            labels = labels.to(self.device).long().reshape(-1)
+            images = images.to(self.device, non_blocking=True)
+            labels = labels.to(self.device, non_blocking=True).long().reshape(-1)
             outputs = self.model(images)
             loss = self.criterion(outputs, labels)
             batch = labels.size(0)
