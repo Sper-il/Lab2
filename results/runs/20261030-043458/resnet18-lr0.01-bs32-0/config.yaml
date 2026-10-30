@@ -1,0 +1,30 @@
+train:
+  model: resnet18
+  strategy: freeze_backbone
+  freeze_until: 1
+  freeze_head_full: false
+  weights: DEFAULT
+  num_classes: 10
+  epochs: 5
+  batch_size: 32
+  lr: 0.01
+  optimizer: adam
+  weight_decay: 0.0001
+  momentum: 0.9
+  scheduler: none
+  loss: cross_entropy
+  label_smoothing: 0.0
+  num_workers: 4
+  seed: 42
+  device: auto
+  image_size: 64
+  early_stopping_patience: 0
+  log_images: true
+  log_histograms: true
+  log_graph: false
+tensorboard:
+  enabled: true
+  log_dir: results/runs
+  log_images: true
+  log_histograms: true
+  log_graph: false

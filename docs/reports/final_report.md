@@ -50,12 +50,12 @@ Nguồn: `count_parameters()` sau `build_model()` với weights ImageNet thật 
 | # | Yêu cầu | Trạng thái | Bằng chứng |
 |---|---------|-----------|------------|
 | E1 | Thử nhiều pre-trained model | ✅ | 3 backbone + report M2 |
-| E2 | Tinh chỉnh hyperparameter | ⏳ | M3/M5 — `configs/*.yaml` + `src/training/` |
-| E3 | TensorBoard | ⏳ | M3 — `src/training/trainer.py` |
-| O1–O5 | Load / explore / adapt / freeze / unfreeze | ✅ | `src/models/factory.py`, 23 test |
+| E2 | Tinh chỉnh hyperparameter | ✅ | Grid sweep: Tier B FT 3 model + sweep `20261030-043458` (ResNet18 freeze × lr {1e-2, 1e-4} × bs {32, 64}); CLI `--lr/--batch-size/--optimizer/--scheduler` — `src/training/__main__.py` |
+| E3 | TensorBoard | ✅ | `tb/` mỗi run (tag `train/*`, `val/*`, `lr`, `model/grad_norm`, `samples/train_images`); mở bằng `tensorboard --logdir results/runs/<ts>/<cfg>/tb` |
+| O1–O5 | Load / explore / adapt / freeze / unfreeze | ✅ | `src/models/factory.py`, 24 test |
 | O6–O8 | Data / transforms / DataLoader | ✅ | `src/data/`, 47 test |
-| O9–O10 | Loss+optimizer / training loop | ⏳ | M3 |
-| O11 | Đánh giá test set | ⏳ | M4 |
+| O9–O10 | Loss+optimizer / training loop | ✅ | `loss.py`/`optimizer.py`/`trainer.py` (đúng 6 bước slide 8–9 Ch.3: device→zero_grad→forward→loss→backward→step), 14 test |
+| O11 | Đánh giá test set | ✅ | 4 eval thật (0.5582 / 0.8273 / 0.8331 / **0.8474**), 18 test |
 
 Chi tiết từng milestone: `docs/reports/m2_models_report.md` (M2). Demo chạy được: `notebooks/20261026_eda_cifar10_demo.ipynb`.
 
@@ -66,10 +66,9 @@ Chi tiết từng milestone: `docs/reports/m2_models_report.md` (M2). Demo chạ
 
 ## 6. Hạn chế đã biết
 
-- **Số thật Tier B (4 eval):** R18 freeze test 0.5582 (chưa đạt target 0.70 — đúng kỳ vọng ảnh nhỏ + chỉ train head); R18 FT 0.8273, VGG FT 0.8331, Dense FT **0.8474** — cả 3 FT đều đạt target tự đặt 0.80 ✅.
-- **CPU-only nên train chậm** (đo thật: FT R18 ~16 phút/epoch, VGG ~23 phút, Dense ~17 phút Tier B 64×64).
-- **Mới xong epoch 1/5** — số cuối (best val, test acc, macro-F1) chỉ có sau khi train + eval xong; sẽ điền vào README §8 + report này.
-- **Ảnh 32×32 upsample** — mất chi tiết, nhưng bắt buộc để dùng weights ImageNet.
+- **Số thật Tier B (4 eval):** R18 freeze test 0.5582 (đúng kỳ vọng ảnh nhỏ + chỉ train head); R18 FT 0.8273, VGG FT 0.8331, Dense FT **0.8474** — cả 3 FT đều đạt target tự đặt 0.80 ✅.
+- **CPU-only nên train chậm** (đo thật Tier B: FT R18 ~16 phút/epoch, VGG ~23 phút, Dense ~17 phút; freeze R18 ~7 phút/epoch).
+- **Ảnh 32×32 upsample** — mất chi tiết, nhưng bắt buộc để dùng weights ImageNet (slide 20: transfer learning cho dataset nhỏ).
 - **Mục tiêu accuracy là tự đặt** (freeze ≥ 0.70, fine-tune ≥ 0.80) — đề bài không cho ngưỡng.
 
 ## 7. Việc còn lại (M5 + hoàn tất M3/M4)
@@ -84,5 +83,5 @@ Chi tiết từng milestone: `docs/reports/m2_models_report.md` (M2). Demo chạ
 
 - Commit: `f130862` (scaffold) → `d0321eb` + `28aa1ff` (M1) → `a1a6b71` (align đề) → `75455dd` (M2) → `390b21d` (M3/M4 code) → `cd5b75d` (docs M3/M4).
 - Code: `src/data/` (7 file), `src/models/` (4 file), `src/training/` (6 file), `src/evaluation/` (3 file + 2 test nhóm), `src/utils/` (2 file), `scripts/` (4 file).
-- Test: 101 passed (47 M1 + 23 M2 + 13 M3 + 18 M4).
+- Test: 102 passed (47 M1 + 24 M2 + 13 M3 + 18 M4) — gồm `test_finetune_all_models` bắt bug B4 (DenseNet `get_module`).
 - Audit: `docs/AUDIT_LOG.md`. Demo: `notebooks/20261026_eda_cifar10_demo.ipynb`. Reports: `m2_models_report.md`, `m3_training_report.md`, `m4_evaluation_report.md`.

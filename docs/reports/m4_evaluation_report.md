@@ -1,6 +1,6 @@
 # Báo cáo M4 — Evaluation & metrics
 
-> Nguồn: `đề.txt` (O11 — Evaluate the Model on test dataset). Mọi con số có nguồn artifact; chỗ nào train chưa xong ghi rõ "chờ checkpoint".
+> Nguồn: `đề.txt` (O11 — Evaluate the Model on test dataset). Mọi con số có nguồn artifact đã push GitHub (trừ `*.pt` nặng — local only).
 
 ## 1. Yêu cầu đề bài được phủ
 

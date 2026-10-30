@@ -74,6 +74,10 @@
 | `src/evaluation/__main__.py` + `configs/eval_config.yaml` | CLI eval: checkpoint → test loader → `metrics.json` + PNG | "chạy toàn bộ giúp tôi" (plan §M4) |
 | `tests/unit/test_training_components.py` + `tests/integration/test_training_loop.py` | 9 unit + 4 integration M3 (FakeData, <10s) | "chạy toàn bộ giúp tôi" |
 | `docs/reports/m3_training_report.md` + `m4_evaluation_report.md` | Report M3/M4: phủ đề E2/E3/O9/O10/O11, test, kết quả train thật | "nhớ cập nhật docs" |
+| `src/models/registry.py` (sửa) + `tests/unit/test_factory.py` (thêm) | Fix B4: `get_module` ưu tiên attribute (DenseNet `features.denseblock4` là Sequential key chuỗi) + test `test_finetune_all_models` (18 test factory) | sweep FT DenseNet crash → fix + verify 3 model × 2 strategy |
+| `models/` (lấp đầy) | `README.md` + `configs/*.yaml` + `trained/*.json` + `.gitkeep`; copy `*-best.pt` local (không push, `.gitignore` chặn) | "trong folder models sao trống trơn vậy" |
+| `notebooks/20261029_train_eval_demo.ipynb` | Demo M3/M4 bằng số thật Tier B (`metrics.json` run 212336): history train, vẽ lại curves, per-class F1, CM | plan §6 (notebook demo M3/M4 đang thiếu) |
+| `results/runs/20261029-220833/` + `20261030-023250/` | Sweep FT 3 model Tier B (R18 test 0.8273 / VGG 0.8331 / Dense **0.8474**) + sweep E2 grid 2×2 | "làm cho tới khi hoàn thành" (không smoke test, chạy thật) |
 
 ## 5. Prompt Purpose (cho mỗi artifact)
 

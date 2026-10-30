@@ -299,7 +299,7 @@ Artifact ghi ra: `results/runs/20261025-150847/` gồm `config.yaml`, `metrics.j
 
 ### 6.6 Chạy training (M3 ✅) + đánh giá (M4 ✅)
 
-> **Trạng thái:** M3 (training loop + TensorBoard) và M4 (evaluation + CLI) đã hiện thực. Mặc định train **Tier B 64×64** cho nhanh trên CPU; muốn Tier A 224×224 thì thêm `--image-size 224`. Run thật đang chạy: `results/runs/20261029-212336/` (ResNet18 freeze, epoch 1/5: train acc 0.499, val acc 0.529, ~414s/epoch).
+> **Trạng thái:** M3 (training loop + TensorBoard) và M4 (evaluation + CLI) đã hiện thực **và chạy thật xong**. Mặc định train **Tier B 64×64** cho nhanh trên CPU; muốn Tier A 224×224 thì thêm `--image-size 224`. 4 run thật Tier B: R18 freeze (best val 0.5654, test 0.5582) + FT R18 (0.8296/0.8273) + FT VGG (0.8316/0.8331) + FT Dense (0.8524/**0.8474**).
 >
 > **Kế hoạch chi tiết** (file nào, hàm nào, test nào, mất bao lâu): xem [`docs/plan-m2-m4.md`](docs/plan-m2-m4.md).
 
@@ -317,9 +317,9 @@ Artifact ghi ra: `results/runs/20261025-150847/` gồm `config.yaml`, `metrics.j
 # Đánh giá checkpoint trên test set
 .\.venv\Scripts\python.exe -m src.evaluation --config configs/eval_config.yaml
 
-# TensorBoard
-.\.venv\Scripts\tensorboard.exe --logdir=runs
-# mở http://localhost:6006/
+# TensorBoard (đường dẫn đúng: tb/ nằm trong từng run config)
+.\.venv\Scripts\tensorboard.exe --logdir results/runs/20261030-023250/densenet121-lr0.001-bs32-0/tb
+# mở http://localhost:6006/ — tags: train/loss, train/accuracy, val/loss, val/accuracy, lr, model/grad_norm, samples/train_images
 ```
 
 > ⚠️ **Về thời gian chạy trên CPU:** đã đo thật trên máy này (12 logical cores, ResNet18, batch 32):
@@ -339,7 +339,7 @@ Artifact ghi ra: `results/runs/20261025-150847/` gồm `config.yaml`, `metrics.j
 .\.venv\Scripts\python.exe -m pytest -q
 ```
 
-Kết quả hiện tại: **101 passed** (47 M1 + 23 M2 + 13 M3 unit/integration + 18 M4).
+Kết quả hiện tại: **102 passed** (47 M1 + 24 M2 + 13 M3 unit/integration + 18 M4).
 
 ### 6.8 Module M2 đã xong — Model Factory ✅
 

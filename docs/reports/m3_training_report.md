@@ -42,14 +42,28 @@
 
 **Best:** val acc **0.5654** ở epoch 4/5; `checkpoints/best.pt` (44.8 MB) + `last.pt`; `metrics.json` + `config.yaml` + `logs.txt` + `tb/` trong `results/runs/20261029-212336/resnet18-lr0.001-bs32-0/`.
 
-## 5. Sweep fine-tune Tier B (đang chạy — run `20261029-220833`, 3 config)
+## 5. Sweep fine-tune Tier B (xong — run `20261029-220833` + `20261030-023250`)
 
-| Config | Epoch 1 | Ghi chú |
-|--------|---------|---------|
-| ResNet18 fine-tune, lr 1e-3 | **xong 5/5: best val 0.8296 @ ep5** (ep1 0.7978 → ep3 0.8212 → ep4 0.8276 → ep5 0.8296); train acc cuối 0.7988 | vượt xa freeze (0.53), đạt target tự đặt 0.80 ✅ |
-| VGG11 fine-tune | **xong 5/5: best val 0.8316 @ ep5** (0.8012 → 0.8142 → 0.8194 → 0.8268 → 0.8316); train acc cuối 0.7913 | ngang ResNet18 FT (0.8296) ✅, eval đang chạy |
-| DenseNet121 fine-tune | **xong 5/5: best val 0.8524 @ ep4** (0.8160 → 0.8274 → 0.8388 → 0.8524; ep5 val 0.8470 hơi giảm — best vẫn ep4); train acc cuối 0.8411 | tốt nhất sweep ✅, eval đang chạy |
+| Config | Kết quả 5/5 | Ghi chú |
+|--------|-------------|---------|
+| ResNet18 fine-tune, lr 1e-3 | **best val 0.8296 @ ep5** (0.7978 → 0.7932 → 0.8212 → 0.8276 → 0.8296); train acc cuối 0.7988 | vượt xa freeze (0.53), đạt target tự đặt 0.80 ✅ |
+| VGG11 fine-tune | **best val 0.8316 @ ep5** (0.8012 → 0.8142 → 0.8194 → 0.8268 → 0.8316); train acc cuối 0.7913 | test 0.8331 ✅ |
+| DenseNet121 fine-tune | **best val 0.8524 @ ep4** (0.8160 → 0.8274 → 0.8388 → 0.8524; ep5 val 0.8470 hơi giảm); train acc cuối 0.8411 | test 0.8474 — tốt nhất sweep ✅ |
 
-## 5. TensorBoard
+## 6. Sweep E2 lr×batch-size (xong — run `20261030-043458`, ResNet18 freeze 4 config)
+
+| Config | Best val | Nhận xét |
+|--------|----------|----------|
+| lr 1e-2, bs 32 | **0.4674 @ ep5** | lr quá lớn → kém baseline |
+| lr 1e-2, bs 64 | **0.5188 @ ep5** | bs lớn ổn định hơn (0.4674) nhưng vẫn kém baseline |
+| lr 1e-4, bs 32 | **0.5558 @ ep5** | hội tụ chậm nhưng ổn định, gần bằng baseline |
+| lr 1e-4, bs 64 | **0.5478 @ ep5** | tương đương bs 32 |
+| baseline lr 1e-3, bs 32 (`20261029-212336`) | **0.5654 @ ep4** | tốt nhất freeze → giữ làm mặc định |
+
+**Kết luận E2:** lr=1e-3 tối ưu cho freeze; lr lớn (1e-2) gây mất ổn định, lr nhỏ (1e-4) hội tụ chậm; batch-size 32 vs 64 chênh lệch nhỏ (~0.01). `sweep_summary.json` trong run parent.
+| lr 1e-4, bs 32 | chờ | sau config 2 |
+| lr 1e-4, bs 64 | chờ | cuối cùng |
+
+## 7. TensorBoard
 
 Mở bằng `.\.venv\Scripts\tensorboard.exe --logdir results/runs/20261029-212336/resnet18-lr0.001-bs32-0/tb` → http://localhost:6006/ — các tag `train/loss`, `train/accuracy`, `val/loss`, `val/accuracy`, `lr`, `model/grad_norm`, `samples/train_images`.

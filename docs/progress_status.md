@@ -48,8 +48,8 @@
 | # | Yêu cầu đề bài | Hiện thực | Module | Trạng thái |
 |---|-----------------|-----------|--------|-----------|
 | E1 | Experiment with different pre-trained models (VGG, DenseNet, etc.) | `src/models/factory.py` | M2 | ✅ |
-| E2 | Adjust the hyperparameters (lr, batch size, etc.) | `configs/*.yaml` + `src/training/` | M3, M5 | ⏳ |
-| E3 | Use TensorBoard to monitor the training process | `src/training/trainer.py` | M3 | ⏳ |
+| E2 | Adjust the hyperparameters (lr, batch size, etc.) | `configs/*.yaml` + `src/training/` + sweep `20261030-043458` (grid 2×2) | M3, M5 | ✅ |
+| E3 | Use TensorBoard to monitor the training process | `src/training/trainer.py` + `tb/` mỗi run, tag scalar/histogram/grad/image | M3 | ✅ |
 | O1 | Load a Pre-trained Model (`weights=`/`pretrained=True`) | `src/models/factory.py` | M2 | ✅ |
 | O2 | Explore the Model Architecture — print model, identify layers & params | `src/models/factory.py` | M2 | ✅ |
 | O3 | Adapt the Model — replace final classification layer (10 classes) | `src/models/factory.py` | M2 | ✅ |
@@ -58,16 +58,16 @@
 | O6 | Prepare the Data — load & prepare dataset | `src/data/` | **M1** | ✅ |
 | O7 | Use `torchvision.transforms` to preprocess | `src/data/transforms.py` | **M1** | ✅ |
 | O8 | Use `torch.utils.data.DataLoader` to create batches | `src/data/dataloader.py` | **M1** | ✅ |
-| O9 | Define the loss function and optimizer | `src/training/trainer.py` | M3 | ⏳ |
-| O10 | Write the training loop | `src/training/trainer.py` | M3 | ⏳ |
-| O11 | Evaluate the Model on a test dataset | `src/evaluation/metrics.py` | M4 | ⏳ |
+| O9 | Define the loss function and optimizer | `src/training/loss.py` + `optimizer.py` (CE/label-smoothing/focal; Adam/AdamW/SGD) | M3 | ✅ |
+| O10 | Write the training loop | `src/training/trainer.py` (đúng 6 bước slide 8–9 Ch.3) | M3 | ✅ |
+| O11 | Evaluate the Model on a test dataset | `src/evaluation/` (4 eval thật: freeze 0.5582 / FT R18 0.8273 / VGG 0.8331 / Dense 0.8474) | M4 | ✅ |
 
 Bước 1 (Environment Setup) — ✅ xong: `requirements.txt` pin torch 2.14.1 / torchvision 0.29.1 / tensorboard 2.21.0, bản CPU.
 
 ## Architecture Snapshot (Phase 2 — DESIGN)
 
 - Pattern: transfer learning pipeline (config-driven, CLI theo module).
-- Modules: `src/data` (dataset/transforms/split) ✅ M1, `src/models` (factory + head replacement + freeze logic) ✅ M2, `src/training` (trainer + scheduler + checkpoint) ⏳ M3, `src/evaluation` (metrics + confusion matrix + visualize) ⏳ M4.
+- Modules: `src/data` (dataset/transforms/split) ✅ M1, `src/models` (factory + head replacement + freeze logic) ✅ M2, `src/training` (trainer + scheduler + checkpoint + sweep E2 grid 2×2) ✅ M3, `src/evaluation` (metrics + confusion matrix + visualize, 4 eval thật) ✅ M4.
 - Data flow: `raw (torchvision download) → transforms → batches → model → logits → loss → weights → metrics.json`.
 - Risks: xem bảng dưới.
 
@@ -105,9 +105,9 @@ Bước 1 (Environment Setup) — ✅ xong: `requirements.txt` pin torch 2.14.1 
 | 1b | M1b — Docs align với `đề.txt` | 2026-10-25 | ✅ | `a1a6b71` | Ma trận truy vết 14 yêu cầu đề; sửa shape, số liệu bịa, path không tồn tại; thêm MD5 check cho `verify_data.py` |
 | 2 | M2 — Model factory (backbone/head/freeze) | 2026-10-26 | ✅ | `75455dd` | `registry.py` + `factory.py` + CLI khám phá; 23 test pass (17 unit + 6 integration); verify weights thật cả 3 model; report `docs/reports/m2_models_report.md` |
 | 2b | M2b — Docs bổ sung (notebook/audit/final report) | 2026-10-26 | ✅ | (commit này) | `notebooks/20261026_eda_cifar10_demo.ipynb` + `docs/AUDIT_LOG.md` + `docs/reports/final_report.md`; sửa D1–D5 trong audit |
-| 3 | M3 — Training loop + TensorBoard | 2026-10-29 | ✅ code, ⏳ train | `390b21d` | `trainer.py` (zero_grad→forward→loss→backward→step), loss/opt/scheduler/tb_utils, CLI sweep models×lr×bs; 13 test pass; train thật Tier B đang chạy `20261029-212336` (ep1: val 0.529) |
-| 4 | M4 — Evaluation & metrics | 2026-10-29 | ✅ code | `390b21d` | `EvalResult` + `evaluate_model(device=cpu)` + `out_path` plots + CLI eval + `eval_config.yaml`; 18 test pass; chờ checkpoint train xong để eval thật |
-| 5 | M5 — Experiment sweep + báo cáo | 2026-10-25 | ⏳ | — | Chạy train + tổng hợp bảng so sánh |
+| 3 | M3 — Training loop + TensorBoard | 2026-10-29 | ✅ | `390b21d` | `trainer.py` (zero_grad→forward→loss→backward→step), loss/opt/scheduler/tb_utils, CLI sweep models×lr×bs; 14 test pass; 4 run thật Tier B: R18 freeze val 0.5654 + FT 3 model (R18 0.8296 / VGG 0.8316 / Dense 0.8524) |
+| 4 | M4 — Evaluation & metrics | 2026-10-30 | ✅ | — | `EvalResult` + `evaluate_model(device=cpu)` + `out_path` plots + CLI eval + `eval_config.yaml`; 18 test pass; 4 eval thật (freeze 0.5582 / R18 FT 0.8273 / VGG FT 0.8331 / Dense FT 0.8474) |
+| 5 | M5 — Experiment sweep + báo cáo | 2026-10-30 | ✅ | — | Sweep FT 3 model xong + sweep E2 grid 2×2 (lr×bs) đang chạy `20261030-043458`; bảng so sánh README §8 |
 
 > **Kế hoạch chi tiết M2–M4:** `docs/plan-m2-m4.md` — danh sách file, chức năng từng hàm, code mẫu đã kiểm chứng, test, tiêu chí hoàn thành, và ước lượng thời gian train **đã đo thật** trên máy này.
 
