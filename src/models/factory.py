@@ -64,7 +64,7 @@ class ModelConfig:
 
     name: str = "resnet18"
     num_classes: int = 10
-    strategy: str = "freeze_backbone"
+    strategy: str = "fine_tune"
     weights: str | None = "DEFAULT"
     freeze_until: int = 1
     freeze_head_full: bool = False

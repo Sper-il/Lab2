@@ -11,10 +11,9 @@ model:
   # null = from scratch (khong dung pre-trained, de doi chung)
   weights: DEFAULT
 
-  # freeze_backbone: chi train head (transfer learning)
-  # fine_tune: mo gradient n block cuoi
+  # fine_tune: mo gradient n block cuoi (mac dinh)
   # from_scratch: train toan bo tu dau
-  strategy: freeze_backbone
+  strategy: fine_tune
 
   # So block cuoi mo gradient khi strategy = fine_tune
   # resnet18: layer1..layer4 (4 stage)

@@ -35,7 +35,7 @@ class TrainConfig:
     """Cau hinh training (moi hyperparameter chinh duoc tu YAML/CLI - E2)."""
 
     model: str = "resnet18"
-    strategy: str = "freeze_backbone"
+    strategy: str = "fine_tune"
     freeze_until: int = 1
     freeze_head_full: bool = False
     weights: str | None = "DEFAULT"

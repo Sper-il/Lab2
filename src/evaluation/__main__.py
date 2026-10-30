@@ -40,7 +40,7 @@ def main(argv=None) -> int:
         raise FileNotFoundError(f"Khong tim thay checkpoint: {ckpt_path}")
 
     model_name = cfg.get("model", "resnet18")
-    strategy = cfg.get("strategy", "freeze_backbone")
+    strategy = cfg.get("strategy", "fine_tune")
     batch_size = int(cfg.get("batch_size", 64))
     num_workers = int(cfg.get("num_workers", 4))
     image_size = int(cfg.get("image_size", 224))

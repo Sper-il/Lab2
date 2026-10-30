@@ -2,7 +2,7 @@
 # Tier A (bao cao chinh, 224): ghi de --image-size 224 khi chay that.
 train:
   model: resnet18
-  strategy: freeze_backbone
+  strategy: fine_tune
   freeze_until: 1
   freeze_head_full: false
   weights: DEFAULT

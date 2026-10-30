@@ -100,30 +100,56 @@ def _plot_distribution(counts_by_split, class_names, output: Path) -> None:
     LOGGER.info("Da luu %s", output)
 
 
-def _plot_samples(images: torch.Tensor, labels: list[int], class_names, output: Path) -> None:
-    """Vẽ lưới ảnh mẫu kèm nhãn.
+def _plot_samples(dataset, class_names, output: Path) -> None:
+    """Vẽ lưới 10x10 ảnh mẫu gốc (mỗi lớp 1 hàng, 10 ảnh).
+
+    Dùng ảnh gốc 32x32 chưa qua resize/normalize nên nét như trang chủ CIFAR,
+    mỗi hàng là 1 lớp, giống layout trên
+    https://cave.cs.toronto.edu/kriz/cifar.html.
 
     Args:
-        images: Batch ảnh đã normalize.
-        labels: Nhãn tương ứng.
+        dataset: Subset hoặc dataset chứa toàn bộ mẫu train.
         class_names: Tên các lớp.
         output: Đường dẫn file PNG output.
     """
-    count = min(12, len(labels))
-    array = _denormalize(images[:count])
-
-    figure, axes = plt.subplots(3, 4, figsize=(13, 10))
-    for index, axis in enumerate(axes.flatten()):
-        if index < count:
-            axis.imshow(array[index])
-            axis.set_title(class_names[labels[index]], fontsize=10)
-        axis.axis("off")
-
-    figure.suptitle(
-        "Anh mau sau transform (resize 32 -> 224 + normalize ImageNet)", fontsize=13
+    base = dataset.dataset if hasattr(dataset, "dataset") else dataset
+    raw = base.data if getattr(base, "data", None) is not None else np.asarray(
+        base._base.data  # type: ignore[attr-defined]
     )
-    figure.tight_layout()
-    figure.savefig(output, dpi=140)
+    targets = np.asarray(base.targets)
+
+    rng = np.random.default_rng(42)
+    # Phóng to mỗi ảnh 32x32 lên 128x128 bằng nearest-neighbor trước khi vẽ:
+    # giữ cạnh pixel sắc nét, không để matplotlib tự nội suy làm mờ.
+    upscale = 4
+    figure, axes = plt.subplots(10, 10, figsize=(16, 13))
+    for cls in range(10):
+        candidates = np.where(targets == cls)[0]
+        chosen = rng.choice(candidates, 10, replace=False)
+        for col, sample_idx in enumerate(chosen):
+            axis = axes[cls, col]
+            small = raw[int(sample_idx)]
+            big = np.repeat(np.repeat(small, upscale, axis=0), upscale, axis=1)
+            axis.imshow(big, interpolation="nearest")
+            axis.axis("off")
+        # Label ten lop nam ben trai moi hang, dung text thay vi ylabel
+        # de khong bi tight_layout cat mat khi axis off.
+        axes[cls, 0].text(
+            -0.12,
+            0.5,
+            class_names[cls],
+            transform=axes[cls, 0].transAxes,
+            fontsize=14,
+            weight="bold",
+            ha="right",
+            va="center",
+            clip_on=False,
+        )
+
+    figure.suptitle("CIFAR-10 — 10 anh mau moi lop (anh goc 32x32)", fontsize=16)
+    figure.subplots_adjust(left=0.11, right=0.98, top=0.92, bottom=0.02,
+                           wspace=0.08, hspace=0.3)
+    figure.savefig(output, dpi=300)
     plt.close(figure)
     LOGGER.info("Da luu %s", output)
 
@@ -168,10 +194,8 @@ def main(argv: list[str] | None = None) -> int:
         plots_dir / "class_distribution.png",
     )
 
-    sample_images, sample_labels = next(iter(val_loader))
     _plot_samples(
-        sample_images,
-        [int(label) for label in sample_labels],
+        train_loader.dataset,
         class_names,
         plots_dir / "sample_images.png",
     )
