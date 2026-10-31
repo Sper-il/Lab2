@@ -1,7 +1,0 @@
-2026-10-30 05:49:11,050 | INFO    | src.data.split | Split train/val: 45000 train / 5000 val (seed=42, 10 lớp)
-2026-10-30 05:49:11,846 | INFO    | src.data.dataloader | DataLoader: train=1407 batch | val=157 batch | test=313 batch | workers=4
-2026-10-30 06:00:31,592 | INFO    | src.training.trainer | epoch 1/5 | train loss 1.8427 acc 0.3601 | val loss 1.6172 acc 0.4452 | lr 1.00e-04 | 679.4s *best*
-2026-10-30 07:16:09,115 | INFO    | src.training.trainer | epoch 2/5 | train loss 1.4615 acc 0.5015 | val loss 1.4477 acc 0.5106 | lr 1.00e-04 | 4537.4s *best*
-2026-10-30 07:22:36,650 | INFO    | src.training.trainer | epoch 3/5 | train loss 1.3742 acc 0.5299 | val loss 1.3884 acc 0.5324 | lr 1.00e-04 | 387.5s *best*
-2026-10-30 07:28:47,371 | INFO    | src.training.trainer | epoch 4/5 | train loss 1.3315 acc 0.5458 | val loss 1.3383 acc 0.5532 | lr 1.00e-04 | 370.6s *best*
-2026-10-30 07:35:04,249 | INFO    | src.training.trainer | epoch 5/5 | train loss 1.3089 acc 0.5508 | val loss 1.3215 acc 0.5558 | lr 1.00e-04 | 376.7s *best*

@@ -1,4 +1,0 @@
-2026-10-29 22:01:04,615 | INFO    | src.data.split | Split train/val: 45000 train / 5000 val (seed=42, 10 lớp)
-2026-10-29 22:01:05,296 | INFO    | src.data.dataloader | DataLoader: train=704 batch | val=79 batch | test=157 batch | workers=4
-2026-10-29 22:02:16,420 | INFO    | matplotlib.category | Using categorical units to plot a list of strings that are all parsable as floats or dates. If these strings should be plotted as numbers, cast to the appropriate data type before plotting.
-2026-10-29 22:02:16,422 | INFO    | matplotlib.category | Using categorical units to plot a list of strings that are all parsable as floats or dates. If these strings should be plotted as numbers, cast to the appropriate data type before plotting.

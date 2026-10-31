@@ -21,3 +21,23 @@
 2026-10-25 15:15:06,314 | INFO    | plot_data_report | Da luu results\runs\20261025-150847\plots\class_distribution.png
 2026-10-25 15:15:41,212 | INFO    | plot_data_report | Da luu results\runs\20261025-150847\plots\sample_images.png
 2026-10-25 15:15:41,212 | INFO    | plot_data_report | Hoan tat bao cao truc quan: results\runs\20261025-150847
+2026-10-30 16:40:25,556 | INFO    | src.data.split | Split train/val: 45000 train / 5000 val (seed=42, 10 lớp)
+2026-10-30 16:40:25,880 | INFO    | src.data.dataloader | DataLoader: train=704 batch | val=79 batch | test=157 batch | workers=2
+2026-10-30 16:40:26,065 | INFO    | plot_data_report | Da luu results\runs\20261025-150847\plots\class_distribution.png
+2026-10-30 16:40:26,805 | INFO    | plot_data_report | Da luu results\runs\20261025-150847\plots\sample_images.png
+2026-10-30 16:40:26,805 | INFO    | plot_data_report | Hoan tat bao cao truc quan: results\runs\20261025-150847
+2026-10-30 16:46:45,264 | INFO    | src.data.split | Split train/val: 45000 train / 5000 val (seed=42, 10 lớp)
+2026-10-30 16:46:45,620 | INFO    | src.data.dataloader | DataLoader: train=704 batch | val=79 batch | test=157 batch | workers=2
+2026-10-30 16:46:46,076 | INFO    | plot_data_report | Da luu results\runs\20261025-150847\plots\class_distribution.png
+2026-10-30 16:46:47,379 | INFO    | plot_data_report | Da luu results\runs\20261025-150847\plots\sample_images.png
+2026-10-30 16:46:47,379 | INFO    | plot_data_report | Hoan tat bao cao truc quan: results\runs\20261025-150847
+2026-10-30 16:48:42,963 | INFO    | src.data.split | Split train/val: 45000 train / 5000 val (seed=42, 10 lớp)
+2026-10-30 16:48:43,327 | INFO    | src.data.dataloader | DataLoader: train=704 batch | val=79 batch | test=157 batch | workers=2
+2026-10-30 16:48:43,609 | INFO    | plot_data_report | Da luu results\runs\20261025-150847\plots\class_distribution.png
+2026-10-30 16:48:44,879 | INFO    | plot_data_report | Da luu results\runs\20261025-150847\plots\sample_images.png
+2026-10-30 16:48:44,881 | INFO    | plot_data_report | Hoan tat bao cao truc quan: results\runs\20261025-150847
+2026-10-30 16:51:40,999 | INFO    | src.data.split | Split train/val: 45000 train / 5000 val (seed=42, 10 lớp)
+2026-10-30 16:51:41,384 | INFO    | src.data.dataloader | DataLoader: train=704 batch | val=79 batch | test=157 batch | workers=2
+2026-10-30 16:51:41,581 | INFO    | plot_data_report | Da luu results\runs\20261025-150847\plots\class_distribution.png
+2026-10-30 16:51:43,681 | INFO    | plot_data_report | Da luu results\runs\20261025-150847\plots\sample_images.png
+2026-10-30 16:51:43,681 | INFO    | plot_data_report | Hoan tat bao cao truc quan: results\runs\20261025-150847

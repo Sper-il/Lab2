@@ -67,17 +67,17 @@ Exercises:
 >
 > **Vòng validate** dùng để đo rồi giữ lại bản tốt nhất theo validation.
 >
-> **Chỉnh siêu tham số.** Em fine-tune cả 3 model 5 epoch bằng Adam, rồi sweep learning rate nhân batch-size.
+> **Chỉnh siêu tham số.** Em fine-tune cả 3 model 5 epoch bằng Adam, rồi sweep learning rate nhân batch-size: 5 giá trị lr 0.0001, 0.0005, 0.001, 0.003, 0.005 nhân 2 batch-size 32/64, tổng 30 cấu hình chạy trên GPU Colab T4 có AMP.
 >
-> Kết quả validation tốt nhất:
+> Kết quả validation tốt nhất (chi tiết ở `results/sweep-FT-lr-bs.log`):
 >
 > | Cấu hình | Val tốt nhất | Nói gì |
 > |-----------|-------------|--------|
-> | ResNet18 fine-tune, Adam, lr 1e-3 | 0,8296 | mở block cuối lên hẳn 0,83 |
-> | VGG11 fine-tune, Adam, lr 1e-3 | 0,8316 | ngang ResNet |
-> | DenseNet121 fine-tune, Adam, lr 1e-3 | **0,8524** | ngon nhất |
+> | ResNet18 fine-tune, Adam, lr 0.0001, batch 32 | 0,8456 | lr nhỏ hợp ResNet nhất |
+> | VGG11 fine-tune, Adam, lr 0.0001, batch 32 | 0,8538 | ngon nhất VGG |
+> | DenseNet121 fine-tune, Adam, lr 0.0005, batch 64 | **0,8618** | ngon nhất sweep |
 >
-> Chốt: Adam + lr 1e-3 là hợp nhất. Batch 32 với 64 chênh nhau có 0,01 — không đáng kể."
+> Chốt: Adam + lr nhỏ từ 0.0001 tới 0.0005 là hợp nhất. Lr từ 0.003 trở lên tụt mạnh, rõ nhất ở VGG. Batch 32 với 64 chênh nhau có 0,01 — batch 64 chạy nhanh hơn nên chốt batch 64."
 
 ---
 
@@ -85,7 +85,7 @@ Exercises:
 
 > "Chấm trên 10.000 ảnh test, model chưa thấy bao giờ.
 >
-> → mở `results/runs/20261030-023250/densenet121-lr0.001-bs32-0/eval/metrics.json`
+> → mở `results/runs/20261030-023250/densenet121-lr0.0005-bs64-0/eval/metrics.json`
 >
 > | Model | Test | F1 | Tốc độ |
 > |-------|------|----|--------|
@@ -104,40 +104,3 @@ Exercises:
 > → mở `.../eval/per_class_f1.png`"
 
 ---
-
-## 7. Chốt · 30s
-
-> "Em chốt 3 câu.
->
-> Một, mượn kiến thức ImageNet là đúng: fine-tune bằng Adam mở thêm block cuối thì lên 82 tới 85%. Ngon nhất là DenseNet121: 84,74%.
->
-> Hai, optimizer em chỉ xài Adam, learning rate quyết định: 1e-3 là vừa.
->
-> Ba, em nói luôn điểm yếu: ảnh sweep chỉ 64 nên điểm thấp hơn ảnh 224 chuẩn; train CPU nên VGG 1 epoch 23 phút; mới 5 epoch nên chưa hết cỡ. Muốn ngon hơn thì ảnh 224, nhiều epoch hơn, thêm scheduler.
->
-> Code, 102 test pass, số liệu, TensorBoard — em để hết trên GitHub. Em xong, cô hỏi gì em trả lời."
-
----
-
-## TRA CỨU (đừng đọc) — số nào nằm ở đâu
-
-| Nói câu gì | Mở file nào |
-|-----------|-------------|
-| 50k train / 10k test | `data/README.md`, run `20261025-150847/metrics.json` |
-| MD5 pass | `scripts/verify_data.py` — mã `c58f...49a` |
-| pixel 119/63 | `data/README.md` |
-| chia 45k/5k/10k, trùng 0, seed 42 | `data/splits/cifar10_split_seed42.json` |
-| transform | `src/data/transforms.py` |
-| tham số 3 model, ra 10 lớp | `results/runs/20261025-150847/model_info.md` |
-| VGG đuôi 103M | `docs/reports/m2_models_report.md` |
-| Trainer 6 bước, Adam | `src/training/trainer.py`, hàm `train_one_epoch` |
-| eval + no_grad | `src/training/trainer.py`, hàm `validate` |
-| lưu best/last | `src/training/trainer.py`, hàm `save_checkpoint` |
-| tag TensorBoard | `src/training/tensorboard_utils.py` |
-| val tốt nhất 3 cấu hình | `results/runs/training_runs.md` → `results/runs/*/*/metrics.json` |
-| sweep lr×bs | `results/runs/training_runs.md` |
-| test 3 model | `results/runs/*/eval/metrics.json` — `test.accuracy`, `test.macro_f1` |
-| mèo F1 0,72 thấp nhất | DenseNet `eval/metrics.json` — `per_class["3"].f1` |
-| mèo↔chó 147/99 | DenseNet `eval/metrics.json` — `confusion_matrix[3][5]`, `[5][3]` |
-| 102 test pass | gõ `pytest -q` — 47 + 24 + 13 + 18 |
-| bug DenseNet | `src/models/registry.py`, test `test_finetune_all_models` |
