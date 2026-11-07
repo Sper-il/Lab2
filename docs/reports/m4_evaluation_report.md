@@ -6,7 +6,7 @@
 
 | # | Yêu cầu | Hiện thực |
 |---|---------|-----------|
-| O11 | Evaluate on test dataset | `evaluate_model(model, loader, device="cpu")` → `EvalResult` (accuracy, macro_f1, per_class, confusion_matrix, inference ms/mẫu, n_samples) + `to_json_dict()` đúng schema `metrics.json`; CLI `python -m src.evaluation --checkpoint <best.pt>` |
+| O11 | Evaluate on test dataset | `evaluate_model(model, loader, device="cpu")` → `EvalResult` (accuracy, macro_f1, per-class, confusion_matrix, inference ms/mẫu, n_samples) + `to_json_dict()` đúng schema `metrics.json`; CLI `python -m src.evaluation --checkpoint <best.pt>` |
 
 ## 2. Files
 
@@ -15,7 +15,7 @@
 | `src/evaluation/metrics.py` | `accuracy`, `per_class_metrics`, `macro_f1`, `confusion_matrix`, `classification_report` (có dòng `accuracy` + `macro avg`), `EvalResult`, `evaluate_model` |
 | `src/evaluation/visualize.py` | `plot_confusion_matrix`, `plot_per_class_f1` (cả 2 nhận `out_path`), `plot_pr_curve`, `plot_confusion_examples`, `plot_train_curves` |
 | `src/evaluation/__main__.py` | CLI eval: load checkpoint → test loader → `metrics.json` + PNG |
-| `configs/eval_config.yaml` | checkpoint, model, batch, image_size, save_plots |
+| `configs/eval_config.yaml` | checkpoint, model, batch, image_size, save_plots (mặc định ảnh 64 khớp checkpoint train chốt) |
 
 ## 3. Test
 
@@ -24,25 +24,18 @@
 | `src/evaluation/test_metrics.py` (13 test) | acc/macro-F1/confusion/per-class/report — PASS |
 | `src/evaluation/test_evaluation.py` (5 test) | end-to-end, schema JSON, plots, checkpoint reload, tổng CM = n_samples — PASS |
 
-## 4. Kết quả eval thật (Tier B, ResNet18 freeze 64×64 → test 10.000 mẫu)
+## 4. Kết quả eval chốt (3 cấu hình tốt nhất retrain 20 epoch, GPU Colab T4, ảnh 64, Adam, fine-tune → test 10.000 mẫu)
 
-`results/runs/20261029-212336/resnet18-lr0.001-bs32-0/eval/metrics.json`:
+Chi tiết: `results/TEST_RESULTS.md`.
 
-| Metric | Giá trị |
-|--------|---------|
-| Test accuracy | **0.5582** |
-| Macro-F1 | **0.5535** |
-| Inference | 4.31 ms/mẫu (CPU) |
-| Best val (train) | 0.5654 @ epoch 4/5 |
+| Model | Cấu hình | Test acc | Macro-F1 | Best val | Nguồn |
+|-------|----------|----------|----------|----------|-------|
+| ResNet18 FT | Adam, lr 0.0001, bs 32, 20 epoch | **0.8626** | 0.8626 | 0.8634 @ ep 17 | `20261031-120033/resnet18-lr0.0001-bs32-0/eval/metrics.json` |
+| VGG11 FT ⭐ | Adam, lr 0.0001, bs 32, 20 epoch | **0.8774** | 0.8765 | 0.8786 @ ep 20 | `20261031-121323/vgg11-lr0.0001-bs32-0/eval/metrics.json` |
+| DenseNet121 FT | Adam, lr 0.0005, bs 64, 20 epoch | **0.8715** | 0.8709 | 0.8800 @ ep 12 | `20261031-122534/densenet121-lr0.0005-bs64-0/eval/metrics.json` |
 
-Per-class F1 thấp nhất: cat (lớp 3) 0.442, deer (lớp 4) 0.424 — đúng cặp dễ nhầm cổ điển của CIFAR-10; cao nhất: automobile (lớp 1) 0.667, ship (lớp 8) 0.622. Confusion matrix tổng = 10.000 = số mẫu test ✓.
+Ngon nhất test là VGG11 với 87,74%.
 
-Plots: `eval/confusion_matrix.png`, `eval/per_class_f1.png`.
+Per-class F1 của VGG11: thấp nhất cat (lớp 3) 0.7629, cao nhất tàu (lớp 8) 0.9347 / ô tô (lớp 1) 0.9343. Confusion matrix tổng = 10.000 = số mẫu test ✓. Nhầm nhiều nhất: mèo → chó 109 tấm, chó → mèo 106 tấm.
 
-## 5. Kết quả eval FT (Tier B fine-tune — test 10.000 mẫu)
-
-| Model | Test acc | Macro-F1 | Best val | Nguồn |
-|-------|----------|----------|----------|-------|
-| ResNet18 FT | **0.8273** ✅ | 0.8258 | 0.8296 @ ep5 | `20261029-220833/resnet18-*/eval/metrics.json` |
-| VGG11 FT | **0.8331** ✅ | 0.8305 | 0.8316 @ ep5 | `20261029-220833/vgg11-*/eval/metrics.json` |
-| DenseNet121 FT | **0.8474** ✅ (tốt nhất sweep) | 0.8468 | 0.8524 @ ep4 | `20261030-023250/densenet121-*/eval/metrics.json` |
+Plots: `eval/confusion_matrix.png`, `eval/per_class_f1.png` trong từng run `20261031-*/<cfg>/eval/`. Báo cáo HTML offline: `report.html` trong từng run (sinh bằng `src/evaluation/visualize_html.py`, mở double-click, số khớp `metrics.json`).

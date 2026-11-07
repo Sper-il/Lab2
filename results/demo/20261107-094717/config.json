@@ -1,0 +1,4 @@
+{
+  "checkpoint": "E:\\lab2\\models\\checkpoints\\vgg11-best.pt",
+  "image_size": 64
+}

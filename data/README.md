@@ -97,7 +97,7 @@ Nội dung `.npz` dùng **cùng thuật toán** `stratified_indices` với pipel
 
 ## Ghi chú quan trọng về kích thước ảnh
 
-CIFAR-10 chỉ có 32×32, trong khi các backbone pre-trained ImageNet (`resnet18`, `vgg11`, `densenet121`) kỳ vọng input 224×224. Pipeline của project sẽ **resize 32 → 224** (đồng thời dùng `RandomCrop(32, padding=4)` + `RandomHorizontalFlip` cho augmentation) rồi normalize theo mean/std của ImageNet.
+CIFAR-10 chỉ có 32×32, trong khi các backbone pre-trained ImageNet (`resnet18`, `vgg11`, `densenet121`) kỳ vọng input 224×224. Pipeline demo M1 sẽ **resize 32 → 224** (đồng thời dùng `RandomCrop(32, padding=4)` + `RandomHorizontalFlip` cho augmentation) rồi normalize theo mean/std của ImageNet. Các run train chốt (sweep 30 cấu hình + retrain 20 epoch) override **resize 32 → 64** trong `configs/train_config.yaml` (`image_size: 64`) để chạy nhanh trên GPU Colab T4 có AMP mà vẫn đạt 86–88% test — xem `results/TEST_RESULTS.md`.
 
 Đây là đánh đổi bắt buộc của hướng dùng pre-trained ImageNet. Nếu giữ nguyên 32×32 thì phải train từ đầu (`weights=None`) — mất đúng ý nghĩa của phần transfer learning trong đề bài.
 
@@ -115,7 +115,7 @@ Histogram phân bố đều với đỉnh ở giữa (96–127 chiếm 18.3%) �
 
 Nguyên nhân: CIFAR-10 gốc chỉ 32×32, mỗi pixel đại diện cho một vùng trộn nhiều chi tiết → không thể phân biệt lông mèo với nền. Resize lên 224×224 chỉ **nội suy**, không tạo thêm thông tin, nên ảnh vẫn mờ ở 224.
 
-Đây là hệ quả không tránh được của việc dùng backbone ImageNet — đề bài quy định dùng pre-trained model, nên 224×224 là lựa chọn đúng. Xem mục "Ghi chú về độ mờ ảnh" trong `README.md` §9.
+Đây là hệ quả không tránh được của việc dùng backbone ImageNet — đề bài quy định dùng pre-trained model. Pipeline demo M1 giữ 224×224 cho đúng chuẩn; các run train chốt dùng 64×64 để chạy nhanh trên GPU mà vẫn đạt 86–88% test. Xem mục "Ghi chú về độ mờ ảnh" trong `README.md` §9.
 
 ## Lưu ý
 

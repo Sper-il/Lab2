@@ -51,14 +51,17 @@ data/raw/cifar-10-batches-py/
         │
         ▼
 ┌─────────────────────────────────────────────────────────┐
-│  DataLoader                                               │
+│  DataLoader (demo M1, ảnh 224)                             │
 │  train: batch 64, shuffle=True,  704 batch               │
 │  val:   batch 64, shuffle=False,  79 batch               │
 │  test:  batch 64, shuffle=False, 157 batch  (10.000 ảnh) │
+│  Train chốt ảnh 64: bs 32 → 1407/157/313 batch;          │
+│  bs 64 → 704/79/157 batch (xem metrics.json 20261031-*) │
 └─────────────────────────────────────────────────────────┘
         │
         ▼
-   images [B, 3, 224, 224] float32   labels [B] int64
+   images [B, 3, 224, 224] float32 (demo M1) labels [B] int64
+   images [B, 3, 64, 64] float32 (train/eval chốt GPU T4) labels [B] int64
 ```
 
 ## 1b. Bước 0 — `src/data/prepare.py` (chạy 1 lần, offline)
@@ -235,8 +238,8 @@ Module này hiện thực 3 yêu cầu trong đề:
 | # | Yêu cầu đề bài | Ở đâu trong module |
 |---|-----------------|--------------------|
 | O6 | *Prepare the Data: Load and prepare your dataset* | `src/data/dataset.py` (`Cifar10Dataset`), `src/data/split.py` (45k/5k/10k), `src/data/prepare.py` (xuất `.npy` + split) |
-| O7 | *Use `torchvision.transforms` to preprocess the data* | `src/data/transforms.py` — `build_train_transform` / `build_val_transform` |
-| O8 | *Use `torch.utils.data.DataLoader` to create data batches* | `src/data/dataloader.py` — `build_dataloaders` → 3 loader, batch `[64, 3, 224, 224]` float32 |
+| O7 | *Use `torchvision.transforms` to preprocess the data* | `src/data/transforms.py` — `build_train_transform` / `build_val_transform` (demo M1 resize 224; train chốt override 64 trong `train_config.yaml`) |
+| O8 | *Use `torch.utils.data.DataLoader` to create data batches* | `src/data/dataloader.py` — `build_dataloaders` → 3 loader, batch `[64, 3, 224, 224]` float32 (demo M1) / `[B, 3, 64, 64]` (train/eval chốt GPU T4) |
 
 Ba yêu cầu còn lại về phía model (O1–O5) và training (O9–O11) thuộc M2–M4.
 

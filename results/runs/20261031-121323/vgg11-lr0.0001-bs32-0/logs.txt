@@ -1,0 +1,22 @@
+2026-10-31 12:13:24,007 | INFO    | src.data.split | Split train/val: 45000 train / 5000 val (seed=42, 10 lớp)
+2026-10-31 12:13:24,389 | INFO    | src.data.dataloader | DataLoader: train=1407 batch | val=157 batch | test=313 batch | workers=2
+2026-10-31 12:14:04,817 | INFO    | src.training.trainer | epoch 1/20 | train loss 0.8857 acc 0.6873 | val loss 0.5555 acc 0.8044 | lr 1.00e-04 | 33.1s *best*
+2026-10-31 12:14:50,638 | INFO    | src.training.trainer | epoch 2/20 | train loss 0.5983 acc 0.7906 | val loss 0.5064 acc 0.8212 | lr 1.00e-04 | 34.0s *best*
+2026-10-31 12:15:24,964 | INFO    | src.training.trainer | epoch 3/20 | train loss 0.5246 acc 0.8174 | val loss 0.4754 acc 0.8326 | lr 1.00e-04 | 32.3s *best*
+2026-10-31 12:16:06,459 | INFO    | src.training.trainer | epoch 4/20 | train loss 0.4800 acc 0.8306 | val loss 0.4501 acc 0.8394 | lr 1.00e-04 | 33.3s *best*
+2026-10-31 12:16:41,599 | INFO    | src.training.trainer | epoch 5/20 | train loss 0.4409 acc 0.8450 | val loss 0.4249 acc 0.8532 | lr 1.00e-04 | 33.2s *best*
+2026-10-31 12:17:14,387 | INFO    | src.training.trainer | epoch 6/20 | train loss 0.4130 acc 0.8538 | val loss 0.4163 acc 0.8506 | lr 1.00e-04 | 32.8s
+2026-10-31 12:17:48,662 | INFO    | src.training.trainer | epoch 7/20 | train loss 0.3958 acc 0.8614 | val loss 0.4035 acc 0.8570 | lr 1.00e-04 | 32.5s *best*
+2026-10-31 12:18:23,304 | INFO    | src.training.trainer | epoch 8/20 | train loss 0.3716 acc 0.8710 | val loss 0.3980 acc 0.8636 | lr 1.00e-04 | 32.6s *best*
+2026-10-31 12:18:55,313 | INFO    | src.training.trainer | epoch 9/20 | train loss 0.3502 acc 0.8749 | val loss 0.3948 acc 0.8628 | lr 1.00e-04 | 32.0s
+2026-10-31 12:19:28,261 | INFO    | src.training.trainer | epoch 10/20 | train loss 0.3393 acc 0.8801 | val loss 0.4096 acc 0.8584 | lr 1.00e-04 | 32.9s
+2026-10-31 12:20:00,675 | INFO    | src.training.trainer | epoch 11/20 | train loss 0.3172 acc 0.8875 | val loss 0.3877 acc 0.8632 | lr 1.00e-04 | 32.4s
+2026-10-31 12:20:34,464 | INFO    | src.training.trainer | epoch 12/20 | train loss 0.3104 acc 0.8899 | val loss 0.3886 acc 0.8672 | lr 1.00e-04 | 32.0s *best*
+2026-10-31 12:21:15,916 | INFO    | src.training.trainer | epoch 13/20 | train loss 0.2986 acc 0.8939 | val loss 0.3922 acc 0.8688 | lr 1.00e-04 | 32.9s *best*
+2026-10-31 12:21:49,933 | INFO    | src.training.trainer | epoch 14/20 | train loss 0.2819 acc 0.9000 | val loss 0.3996 acc 0.8702 | lr 1.00e-04 | 32.2s *best*
+2026-10-31 12:22:23,087 | INFO    | src.training.trainer | epoch 15/20 | train loss 0.2786 acc 0.9007 | val loss 0.4015 acc 0.8690 | lr 1.00e-04 | 33.2s
+2026-10-31 12:22:54,979 | INFO    | src.training.trainer | epoch 16/20 | train loss 0.2636 acc 0.9049 | val loss 0.4059 acc 0.8698 | lr 1.00e-04 | 31.9s
+2026-10-31 12:23:27,285 | INFO    | src.training.trainer | epoch 17/20 | train loss 0.2550 acc 0.9099 | val loss 0.4258 acc 0.8658 | lr 1.00e-04 | 32.3s
+2026-10-31 12:24:03,596 | INFO    | src.training.trainer | epoch 18/20 | train loss 0.2486 acc 0.9114 | val loss 0.4033 acc 0.8746 | lr 1.00e-04 | 32.5s *best*
+2026-10-31 12:24:45,673 | INFO    | src.training.trainer | epoch 19/20 | train loss 0.2421 acc 0.9123 | val loss 0.4087 acc 0.8782 | lr 1.00e-04 | 33.3s *best*
+2026-10-31 12:25:20,996 | INFO    | src.training.trainer | epoch 20/20 | train loss 0.2354 acc 0.9172 | val loss 0.4110 acc 0.8786 | lr 1.00e-04 | 33.3s *best*

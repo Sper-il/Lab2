@@ -28,7 +28,7 @@ Công cụ: PyTorch 2.x + torchvision + TensorBoard.
 - Tải tự động qua `torchvision.datasets.CIFAR10` — không cần thu thập dữ liệu thủ công.
 - Đủ nhỏ để train nhanh trên CPU, đủ lớn để đo được khác biệt giữa các chiến lược freeze/fine-tune.
 
-**Input:** ảnh RGB 32×32 × 3 → được resize lên **224×224** để khớp input của backbone pre-trained ImageNet (một batch: `[B, 3, 224, 224]`, dtype `float32`, đã normalize theo ImageNet mean/std).
+**Input:** ảnh RGB 32×32 × 3 → resize lên **64×64** trong các run train chính (override `image_size: 64` trong `configs/train_config.yaml` để train nhanh), hoặc **224×224** chuẩn ImageNet khi chạy pipeline M1/demo (`configs/data_config.yaml`, một batch: `[B, 3, 224, 224]`, dtype `float32`, đã normalize theo ImageNet mean/std).
 **Output:** vector logits `[B, 10]` → `argmax` ra nhãn lớp; probability qua softmax.
 
 **Chia dữ liệu:** CIFAR-10 chuẩn — 50.000 ảnh train / 10.000 ảnh test. Ta lấy 5.000 ảnh từ tập train làm **validation** (stratified, seed cố định), còn lại 45.000 để train. Test set chỉ dùng để đánh giá cuối cùng.
@@ -44,7 +44,7 @@ Công cụ: PyTorch 2.x + torchvision + TensorBoard.
 | # | Yêu cầu trong `đề.txt` | Nội dung cụ thể | Hiện thực | Module | Trạng thái |
 |---|------------------------|-----------------|-----------|--------|-----------|
 | E1 | Experiment with different pre-trained models (VGG, DenseNet, etc.) | So sánh ResNet18 / VGG11 / DenseNet121 | `src/models/factory.py` | M2 | ✅ |
-| E2 | Adjust the hyperparameters (learning rate, batch size, etc.) | Sweep lr / batch size / optimizer / epoch | `configs/*.yaml` + `src/training/` | M3, M5 | ✅ |
+| E2 | Adjust the hyperparameters (learning rate, batch size, etc.) | Sweep 30 cấu hình fine-tune Adam 5 epoch (lr 0.0001/0.0005/0.001/0.003/0.005 × batch 32/64) + retrain 3 cấu hình tốt nhất 20 epoch | `configs/*.yaml` + `src/training/` + `notebooks/colab_sweep.ipynb` + `notebooks/colab_best3_retrain.ipynb` | M3, M5 | ✅ |
 | E3 | Use TensorBoard to monitor the training process | Scalar (loss/acc), histogram weight, graph, image | `src/training/trainer.py` | M3 | ✅ |
 | O1 | Load a Pre-trained Model (`pretrained=True` / `weights=`) | `torchvision.models.*(weights="DEFAULT")` | `src/models/factory.py` | M2 | ✅ |
 | O2 | Explore the Model Architecture — print model, identify layers & params | In cấu trúc + đếm `params_total` / `params_trainable` | `src/models/factory.py` | M2 | ✅ |
@@ -52,8 +52,8 @@ Công cụ: PyTorch 2.x + torchvision + TensorBoard.
 | O4 | Freeze earlier layers (transfer learning) | `freeze_backbone` — chỉ train head | `src/models/factory.py` | M2 | ✅ |
 | O5 | Unfreeze a few of the final layers (fine-tuning) | `fine_tune` — unfreeze block cuối + norm + head | `src/models/factory.py` | M2 | ✅ |
 | O6 | Prepare the Data — load & prepare dataset | CIFAR-10 45k/5k/10k, in-memory | `src/data/` | **M1** | ✅ |
-| O7 | Use `torchvision.transforms` to preprocess | RandomCrop+Flip → Resize 224 → ToTensor → Normalize | `src/data/transforms.py` | **M1** | ✅ |
-| O8 | Use `torch.utils.data.DataLoader` to create batches | 3 loader: 704/79/157 batch, `[B,3,224,224]` | `src/data/dataloader.py` | **M1** | ✅ |
+| O7 | Use `torchvision.transforms` to preprocess | RandomCrop+Flip → Resize 64 (train chốt GPU) / 224 (pipeline M1 demo) → ToTensor → Normalize | `src/data/transforms.py` | **M1** | ✅ |
+| O8 | Use `torch.utils.data.DataLoader` to create batches | 3 loader: 704/79/157 batch (224, M1 demo `[B,3,224,224]`); train chốt 64: 1407/157/313 batch (bs 32) hoặc 704/79/157 batch (bs 64) | `src/data/dataloader.py` | **M1** | ✅ |
 | O9 | Define the loss function and optimizer | `CrossEntropyLoss` + Adam | `src/training/trainer.py` | M3 | ✅ |
 | O10 | Write the training loop | zero_grad → forward → loss → backward → step | `src/training/trainer.py` | M3 | ✅ |
 | O11 | Evaluate the Model on a test dataset | Test acc + macro-F1 + confusion matrix | `src/evaluation/metrics.py` | M4 | ✅ |
@@ -87,7 +87,8 @@ Công cụ: PyTorch 2.x + torchvision + TensorBoard.
 
 ```
 [CIFAR-10 /root]  ──►  [Transforms]  ──►  [DataLoader]
-                        resize 32→224      shuffle=True
+                        resize 32→64 (train/eval chốt GPU T4)      shuffle=True (train)
+                        resize 32→224 (demo M1)                    shuffle=False (val/test)
                         normalize ImageNet   num_workers=N
                               │
                               ▼
@@ -103,7 +104,7 @@ Công cụ: PyTorch 2.x + torchvision + TensorBoard.
                     [Replaced head: Linear → 10]
                               │
                               ▼
-                [CrossEntropyLoss] + [Adam/SGD]
+                [CrossEntropyLoss] + [Adam]  (chốt chỉ dùng Adam)
                               │
                               ▼
                    [Training loop + Validation]
@@ -111,7 +112,7 @@ Công cụ: PyTorch 2.x + torchvision + TensorBoard.
                     ┌─────────┴─────────┐
                     ▼                   ▼
          [TensorBoard logs]     [best.pt checkpoint]
-              runs/exp/           models/checkpoints/
+              results/runs/*/tb/    results/runs/*/checkpoints/
                     │
                     ▼
               [Test evaluation]
@@ -120,7 +121,7 @@ Công cụ: PyTorch 2.x + torchvision + TensorBoard.
 
 Chi tiết luồng dữ liệu: xem `docs/data-flow.md` (M1) + `docs/plan-m2-m4.md` (M2–M4).
 
-> Sơ đồ trên là pipeline **đã hiện thực đầy đủ M1–M4**: data (M1 ✅) → factory 3 backbone + freeze/unfreeze (M2 ✅) → training loop + TensorBoard + `best.pt` (M3 ✅, run thật `20261029-212336`) → test evaluation + `metrics.json` + PNG (M4 ✅).
+> Sơ đồ trên là pipeline **đã hiện thực đầy đủ M1–M4**: data (M1 ✅, run `20261025-150847`) → factory 3 backbone + freeze/unfreeze (M2 ✅) → training loop + TensorBoard + `best.pt` (M3 ✅, 3 run chốt 20 epoch `20261031-120033/-121323/-122534` trên GPU Colab T4) → test evaluation + `metrics.json` + PNG (M4 ✅).
 
 ## 5. Folder Structure
 
@@ -157,21 +158,24 @@ lab2/
 │   └── evaluation/        # metrics, confusion matrix, visualize  ✅ M4
 │       ├── metrics.py     # EvalResult + evaluate_model + report
 │       ├── visualize.py   # plot CM / per-class F1 / PR / misclassified
+│       ├── visualize_html.py  # render report.html offline từ metrics.json + PNG
 │       └── __main__.py    # CLI eval: checkpoint → metrics.json + PNG
+│   └── demo/              # demo 1 lệnh chạy được  ✅ M5 demo
+│       └── __main__.py    # python -m src.demo --checkpoint <best.pt>
 │
 ├── models/
 │   ├── checkpoints/       # best.pt theo từng run (gitignore)
 │   ├── trained/           # model cuối cùng đã đánh giá (gitignore)
 │   └── configs/           # config kiến trúc (yaml)
 │
-├── notebooks/             # EDA + demo: 20261026_eda_cifar10_demo.ipynb (M2b)
+├── notebooks/             # EDA + demo M1/M2 + sweep/retrain Colab: 20261026_eda_cifar10_demo.ipynb, 20261029_train_eval_demo.ipynb, colab_sweep.ipynb (sweep 30 cấu hình 5 epoch), colab_best3_retrain.ipynb (retrain 20 epoch + chấm test)
 ├── tests/
 │   ├── unit/              # M1 (transforms/split/dataset/prepare) + M2 (factory) + M3 (training_components)
 │   │   ├── test_transforms.py
 │   │   ├── test_split.py
 │   │   ├── test_dataset.py
 │   │   ├── test_prepare.py
-│   │   ├── test_factory.py        # 17 test M2
+│   │   ├── test_factory.py        # 18 test M2 (gồm test_finetune_all_models bắt bug B4)
 │   │   └── test_training_components.py  # 9 test M3
 │   └── integration/       # M1 (dataloader) + M2 (model_pipeline) + M3 (training_loop)
 │       ├── test_dataloader_pipeline.py
@@ -182,9 +186,10 @@ lab2/
 │   ├── test_metrics.py      # 13 test M4
 │   └── test_evaluation.py   # 5 test M4
 │
-├── docs/                  # data-flow.md (M1), plan-m2-m4.md, reports/m2_models_report.md + m3_training_report.md + m4_evaluation_report.md + final_report.md, AUDIT_LOG.md
+├── docs/                  # architecture.md + data-flow.md + api.md + description.md + data.md + model.md + evaluation.md + audit_code.md + eda.md + plan-m2-m4.md + demo.md + CHANGELOG.md + reports/m2 + m3 + m4 + final_report.md, AUDIT_LOG.md
 ├── configs/               # data_config.yaml ✅ | model_config.yaml ✅ M2 | train_config.yaml ✅ M3 | eval_config.yaml ✅ M4
-├── results/runs/<ts>/     # metrics.json, config.yaml, logs.txt, plots/
+├── results/runs/<ts>/     # metrics.json, config.yaml, logs.txt, plots/, tb/, eval/, report.html (offline)
+├── results/demo/<ts>/     # predictions.json + index.html (demo 1 lệnh)
 │
 ├── .venv/                 # môi trường ảo Python 3.13 (gitignore)
 ├── scripts/               # tiện ích: tải & verify dataset, sinh biểu đồ, benchmark
@@ -205,7 +210,7 @@ lab2/
 - Windows 10/11, PowerShell
 - Python 3.13 (đã cài sẵn: `C:\Program Files\Python313\python.exe`)
 - ~6 GB disk cho `.venv` + dataset CIFAR-10 (~170 MB)
-- **Không có GPU NVIDIA** trên máy này → cài bản **CPU** của PyTorch. Toàn bộ hyperparameter trong `configs/` đã chọn để chạy được trên CPU.
+- **Máy local không có GPU NVIDIA** → cài bản **CPU** của PyTorch để chạy pipeline M1/demo và test. Train nặng (sweep 30 cấu hình + retrain 20 epoch) chạy trên **GPU Colab T4 có AMP**; `configs/train_config.yaml` để sẵn `image_size: 64`, `use_amp: true` để chạy nhanh trên GPU.
 
 ### 6.2 Tạo môi trường ảo (đã thực hiện sẵn)
 
@@ -299,7 +304,9 @@ Artifact ghi ra: `results/runs/20261025-150847/` gồm `config.yaml`, `metrics.j
 
 ### 6.6 Chạy training (M3 ✅) + đánh giá (M4 ✅)
 
-> **Trạng thái:** M3 (training loop + TensorBoard) và M4 (evaluation + CLI) đã hiện thực **và chạy thật xong**. Mặc định train **Tier B 64×64** cho nhanh trên CPU; muốn Tier A 224×224 thì thêm `--image-size 224`. 4 run thật Tier B: R18 freeze (best val 0.5654, test 0.5582) + FT R18 (0.8296/0.8273) + FT VGG (0.8316/0.8331) + FT Dense (0.8524/**0.8474**).
+> **Trạng thái:** M3 (training loop + TensorBoard) và M4 (evaluation + CLI) đã hiện thực **và chạy thật xong**. Mặc định train **ảnh 64×64** cho nhanh; muốn ảnh 224×224 chuẩn ImageNet thì thêm `--image-size 224`. Quy trình chốt:
+> 1. Sweep 30 cấu hình fine-tune Adam 5 epoch trên GPU Colab T4 (lr 0.0001/0.0005/0.001/0.003/0.005 × batch 32/64) — chi tiết `results/OTM_RESULTS.md` + `results/sweep-FT-lr-bs.log` — chọn ra 3 cấu hình tốt nhất.
+> 2. Retrain 3 cấu hình tốt nhất **20 epoch** trên GPU Colab T4 có AMP (`notebooks/colab_best3_retrain.ipynb`) rồi chấm test 10.000 ảnh — kết quả `results/TEST_RESULTS.md`: ResNet18 (lr 0.0001, bs 32) test **86,26%** + VGG11 (lr 0.0001, bs 32) test **87,74%** ⭐ + DenseNet121 (lr 0.0005, bs 64) test **87,15%**.
 >
 > **Kế hoạch chi tiết** (file nào, hàm nào, test nào, mất bao lâu): xem [`docs/plan-m2-m4.md`](docs/plan-m2-m4.md).
 
@@ -308,7 +315,7 @@ Artifact ghi ra: `results/runs/20261025-150847/` gồm `config.yaml`, `metrics.j
 .\.venv\Scripts\python.exe -m src.models --config configs/model_config.yaml --model resnet18
 .\.venv\Scripts\python.exe -m src.models --model vgg11 --print-model
 
-# M3 — train (Tier B 64×64 mặc định; Tier A 224 thêm --image-size 224)
+# M3 — train (mặc định ảnh 64×64 cho nhanh; muốn ảnh 224 chuẩn ImageNet thì thêm --image-size 224)
 .\.venv\Scripts\python.exe -m src.training --config configs/train_config.yaml
 
 # So sánh nhiều model: ResNet18 / VGG11 / DenseNet121
@@ -317,21 +324,20 @@ Artifact ghi ra: `results/runs/20261025-150847/` gồm `config.yaml`, `metrics.j
 # Đánh giá checkpoint trên test set
 .\.venv\Scripts\python.exe -m src.evaluation --config configs/eval_config.yaml
 
-# TensorBoard (đường dẫn đúng: tb/ nằm trong từng run config)
-.\.venv\Scripts\tensorboard.exe --logdir results/runs/20261030-023250/densenet121-lr0.001-bs32-0/tb
+# Báo cáo HTML offline (1 file duy nhất, mở bằng double-click)
+.\.venv\Scripts\python.exe -m src.evaluation.visualize_html --run-dir results/runs/20261031-121323/vgg11-lr0.0001-bs32-0
+# → results/runs/20261031-121323/vgg11-lr0.0001-bs32-0/report.html (bảng pass/fail, curves, mẫu tốt/xấu, latency)
+
+# Demo 1 lệnh (checkpoint tốt nhất VGG11, 8 ảnh test thật)
+.\.venv\Scripts\python.exe -m src.demo --checkpoint models/checkpoints/vgg11-best.pt --num-samples 8
+# → results/demo/<ts>/predictions.json + index.html (chi tiết: docs/demo.md)
+
+# TensorBoard (đường dẫn đúng: tb/ nằm trong từng run config — ví dụ run VGG11 20 epoch tốt nhất)
+.\.venv\Scripts\tensorboard.exe --logdir results/runs/20261031-121323/vgg11-lr0.0001-bs32-0/tb
 # mở http://localhost:6006/ — tags: train/loss, train/accuracy, val/loss, val/accuracy, lr, model/grad_norm, samples/train_images
 ```
 
-> ⚠️ **Về thời gian chạy trên CPU:** đã đo thật trên máy này (12 logical cores, ResNet18, batch 32):
->
-> | Cấu hình | 1 epoch | 5 epoch |
-> |----------|---------|---------|
-> | ResNet18 freeze, 224×224 | ~37 phút | ~3 giờ |
-> | ResNet18 freeze, 64×64 | ~5 phút | ~24 phút |
-> | VGG11 freeze, 224×224 | ~144 phút | ~12 giờ |
-> | DenseNet121 freeze, 224×224 | ~124 phút | ~10 giờ |
->
-> Vì vậy plan chia làm 2 tầng: **Tier A (224×224)** cho kết quả báo cáo chính, **Tier B (64×64)** cho sweep rộng. Chi tiết: `docs/plan-m2-m4.md` §2.4.
+> ⚠️ **Về thời gian chạy:** local CPU đã đo thật (12 logical cores, ResNet18, batch 32): freeze 224×224 ~37 phút/epoch, 64×64 ~5 phút/epoch; VGG11 224 ~144 phút/epoch; DenseNet121 224 ~124 phút/epoch — nên train chốt chuyển lên **GPU Colab T4**: ResNet18/VGG11 chỉ ~27–35 giây/epoch, DenseNet121 ~48–86 giây/epoch (sweep 5 epoch, ảnh 64, AMP). Vì vậy ảnh chốt là **64×64** cho cả sweep lẫn retrain 20 epoch; ảnh 224×224 chỉ dùng cho pipeline M1/demo. Chi tiết: `docs/plan-m2-m4.md` §2.4.
 
 ### 6.7 Test
 
@@ -346,54 +352,55 @@ Kết quả hiện tại: **102 passed** (47 M1 + 24 M2 + 13 M3 unit/integration
 - CLI khám phá: `.\.venv\Scripts\python.exe -m src.models --model resnet18|vgg11|densenet121 [--print-model]`
 - Kết quả verify với weights ImageNet thật (output `(1, 10)` cả 3 model):
 
-| Model | Total | Trainable (freeze) | Run |
-|-------|-------|--------------------|-----|
-| resnet18 | 11,181,642 | 5,130 (0.046%) | `results/runs/20261026-115633/` |
-| vgg11 | 128,807,306 | 40,970 (0.032%) | `results/runs/20261026-120218/` |
-| densenet121 | 6,964,106 | 10,250 (0.147%) | `results/runs/20261026-121817/` |
+| Model | Total | Trainable (freeze) | Ghi chú |
+|-------|-------|--------------------|---------|
+| resnet18 | 11,181,642 | 5,130 (0.046%) | verify weights ImageNet thật, output `(1, 10)` |
+| vgg11 | 128,807,306 | 40,970 (0.032%) | verify weights ImageNet thật, output `(1, 10)` |
+| densenet121 | 6,964,106 | 10,250 (0.147%) | verify weights ImageNet thật, output `(1, 10)` |
 
 - Chi tiết: `docs/reports/m2_models_report.md`
 
 ## 7. Example Input → Output
 
-**Input**
+**Input** (train/eval chốt ảnh 64×64)
 
 ```python
-# Một batch ảnh CIFAR-10 đã transform, shape [B, 3, 224, 224]
+# Một batch ảnh CIFAR-10 đã transform, shape [B, 3, 64, 64] (chốt GPU T4)
 images, labels = next(iter(train_loader))
-# images: torch.float32 [64, 3, 224, 224] | labels: torch.int64 [64]
-```
+# images: torch.float32 [64, 3, 64, 64] | labels: torch.int64 [64]
+# Demo M1 chuẩn ImageNet: [B, 3, 224, 224] (run 20261025-150847)
 
-**Output** (số thật Tier B: ResNet18 freeze 64x64, `results/runs/20261029-212336/`)
+**Output** (số thật chốt 20 epoch: VGG11 fine-tune 64×64, `results/runs/20261031-121323/vgg11-lr0.0001-bs32-0/`)
 
-> Test 10.000 mẫu: acc 0.5582, macro-F1 0.5535. Per-class F1 thấp nhất: cat 0.442 / deer 0.424; cao nhất: automobile 0.667 / ship 0.622.
+> Test 10.000 mẫu: acc 0.8774, macro-F1 0.8765. Per-class F1 thấp nhất: cat 0.7629; cao nhất: ô tô 0.9343 / tàu 0.9347. Nhầm nhiều nhất: mèo → chó 109 tấm, chó → mèo 106 tấm.
 
 ```json
 {
-  "model": "resnet18",
-  "strategy": "freeze_backbone",
-  "epochs": 5,
-  "best_val_accuracy": 0.5654,
-  "test_accuracy": 0.5582,
-  "macro_f1": 0.5535,
-  "params_total": 11181642,
-  "params_trainable": 5130,
-  "inference_time_ms_per_sample": 4.31
+  "model": "vgg11",
+  "strategy": "fine_tune",
+  "epochs": 20,
+  "best_val_accuracy": 0.8786,
+  "best_epoch": 19,
+  "test_accuracy": 0.8774,
+  "macro_f1": 0.8765,
+  "params_total": 128807306,
+  "params_trainable": 2400778
 }
 
-> Số đo thật từ `eval/metrics.json` (test 10.000 mẫu, Tier B 64x64).
+> Số đo thật từ `eval/metrics.json` (test 10.000 mẫu, ảnh 64×64, Adam lr 0.0001 batch 32).
 ```
 
 ## 8. Results
 
-Bảng Tier B (64x64) — nguồn: `results/runs/20261029-212336/.../eval/metrics.json`. Tier B ảnh nhỏ nên accuracy thấp hơn Tier A 224x224 — không trộn 2 bảng.
+Kết quả chốt: retrain 3 cấu hình tốt nhất **20 epoch** trên GPU Colab T4 (ảnh 64×64, Adam, fine-tune, AMP) rồi chấm test 10.000 ảnh — nguồn `results/TEST_RESULTS.md` + `results/runs/20261031-*/<cfg>/eval/metrics.json`. Sweep 30 cấu hình 5 epoch để chọn ra 3 cấu hình này: `results/OTM_RESULTS.md` + `results/sweep-FT-lr-bs.log`.
 
-| Model | Strategy | LR | Batch | Epoch | Val Acc | Test Acc | Macro F1 | Run |
-|-------|----------|----|-------|-------|---------|----------|---------|-----|
-| ResNet18 | freeze backbone | 1e-3 | 32 | 5 | 0.5654 | 0.5582 | 0.5535 | `20261029-212336` |
-| ResNet18 | fine-tune block4 | 1e-3 | 32 | 5 | 0.8296 | 0.8273 | 0.8258 | `20261029-220833` |
-| VGG11 | fine-tune | 1e-3 | 32 | 5 | 0.8316 | 0.8331 | 0.8305 | `20261029-220833` |
-| DenseNet121 | fine-tune | 1e-3 | 32 | 5 | 0.8524 | 0.8474 | 0.8468 | `20261030-023250` |
+| Model | LR | Batch | Epoch | Val tốt nhất | Test Acc | Macro F1 | Run |
+|-------|----|-------|-------|--------------|----------|---------|-----|
+| ResNet18 fine-tune | 0.0001 | 32 | 20 | 0.8634 @ ep 17 | 0.8626 | 0.8626 | `20261031-120033` |
+| **VGG11 fine-tune ⭐** | **0.0001** | **32** | **20** | **0.8786 @ ep 20** | **0.8774** | **0.8765** | `20261031-121323` |
+| DenseNet121 fine-tune | 0.0005 | 64 | 20 | 0.8800 @ ep 12 | 0.8715 | 0.8709 | `20261031-122534` |
+
+Ngon nhất test là VGG11 với 87,74% (F1 mèo thấp nhất 0,76; tàu cao nhất 0,93; nhầm nhiều nhất mèo → chó 109 tấm, chó → mèo 106 tấm).
 
 Tiêu chí đạt (định nghĩa trước khi code):
 
@@ -408,13 +415,13 @@ Tiêu chí đạt (định nghĩa trước khi code):
 
 ## 9. Limitations
 
-- **CPU-only**: đã đo thật (ResNet18 freeze 224 = 36.6 min/epoch; VGG11 = ~144 min/epoch; DenseNet121 = ~124 min/epoch) → sweep rộng dùng Tier B 64×64 (~5 min/epoch). Riêng phần data loading đã đo được ~1.9 phút/epoch, phần còn lại là forward/backward của backbone trên CPU.
-- **Ảnh 32×32 được upsample lên 224×224** để khớp input của model pre-trained — tốn bộ nhớ và làm mất một phần chi tiết; đây là hệ quả của việc dùng backbone ImageNet.
+- **Train chính trên GPU Colab T4 (có AMP), ảnh 64×64**: sweep 30 cấu hình 5 epoch (~27–86 giây/epoch tùy model) rồi retrain 3 cấu hình tốt nhất 20 epoch. Local CPU-only (ResNet18 freeze 224 = 36.6 min/epoch; VGG11 = ~144 min/epoch) chỉ dùng cho pipeline M1/demo, không dùng cho kết quả chốt — vì vậy `configs/train_config.yaml` để `image_size: 64`, `use_amp: true`.
+- **Ảnh 32×32 được upsample lên 64×64** (train/eval chốt) hoặc 224×224 (pipeline M1/demo) để khớp input backbone pre-trained — tốn bộ nhớ và làm mất một phần chi tiết; đây là hệ quả của việc dùng backbone ImageNet.
 
   > **Ghi chú về độ mờ ảnh:** không phải dữ liệu hỏng. Đo trên 256 ảnh đầu: `mean 119.3`, `std 62.9`, chỉ 0.30% pixel đen tuyệt đối và 0.72% trắng tuyệt đối, histogram phân bố đều quanh giữa → dữ liệu lành mạnh. Ảnh vẫn mờ vì CIFAR-10 gốc chỉ 32×32 và resize 224 chỉ nội suy chứ không tạo thêm chi tiết. Chi tiết đo đạc: `data/README.md`.
-- **Chỉ 5 epoch mặc định** để phù hợp giới hạn thời gian; kết quả chưa hội tụ hoàn toàn.
+- **Sweep 5 epoch để chọn cấu hình, retrain chốt 20 epoch** để hội tụ hoàn toàn (kết quả §8). Config mặc định `epochs: 5` chỉ dùng cho sweep nhanh; retrain chốt override `--epochs 20` (notebook `colab_best3_retrain.ipynb`).
 - BatchNorm statistics của backbone được đóng băng khi freeze → không tối ưu lại theo phân phối CIFAR.
-- Chưa thử `torch.compile`, AMP, hay distributed training.
+- Chưa thử `torch.compile` hay distributed training.
 
 ## 10. Future Improvements
 

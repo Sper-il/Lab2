@@ -1,0 +1,202 @@
+{
+  "checkpoint": "E:\\lab2\\models\\checkpoints\\vgg11-best.pt",
+  "device": "cpu",
+  "image_size": 64,
+  "num_samples": 8,
+  "accuracy": 0.75,
+  "mean_latency_ms": 50.5674000014551,
+  "predictions": [
+    {
+      "index": 0,
+      "true_label": 3,
+      "true_class": "cat",
+      "top3": [
+        {
+          "class": "cat",
+          "label": 3,
+          "prob": 0.9497266411781311
+        },
+        {
+          "class": "dog",
+          "label": 5,
+          "prob": 0.047894109040498734
+        },
+        {
+          "class": "frog",
+          "label": 6,
+          "prob": 0.0019541641231626272
+        }
+      ],
+      "correct": true,
+      "latency_ms": 61.04810000397265
+    },
+    {
+      "index": 1,
+      "true_label": 8,
+      "true_class": "ship",
+      "top3": [
+        {
+          "class": "automobile",
+          "label": 1,
+          "prob": 0.74605393409729
+        },
+        {
+          "class": "ship",
+          "label": 8,
+          "prob": 0.24167296290397644
+        },
+        {
+          "class": "truck",
+          "label": 9,
+          "prob": 0.010807648301124573
+        }
+      ],
+      "correct": false,
+      "latency_ms": 49.223899957723916
+    },
+    {
+      "index": 2,
+      "true_label": 8,
+      "true_class": "ship",
+      "top3": [
+        {
+          "class": "automobile",
+          "label": 1,
+          "prob": 0.5600252747535706
+        },
+        {
+          "class": "ship",
+          "label": 8,
+          "prob": 0.4309254288673401
+        },
+        {
+          "class": "airplane",
+          "label": 0,
+          "prob": 0.005005672574043274
+        }
+      ],
+      "correct": false,
+      "latency_ms": 51.010800001677126
+    },
+    {
+      "index": 3,
+      "true_label": 0,
+      "true_class": "airplane",
+      "top3": [
+        {
+          "class": "airplane",
+          "label": 0,
+          "prob": 0.3743602931499481
+        },
+        {
+          "class": "ship",
+          "label": 8,
+          "prob": 0.27240413427352905
+        },
+        {
+          "class": "automobile",
+          "label": 1,
+          "prob": 0.16733886301517487
+        }
+      ],
+      "correct": true,
+      "latency_ms": 48.60430001281202
+    },
+    {
+      "index": 4,
+      "true_label": 6,
+      "true_class": "frog",
+      "top3": [
+        {
+          "class": "frog",
+          "label": 6,
+          "prob": 1.0
+        },
+        {
+          "class": "cat",
+          "label": 3,
+          "prob": 7.997868318142254e-13
+        },
+        {
+          "class": "deer",
+          "label": 4,
+          "prob": 4.63925827007966e-13
+        }
+      ],
+      "correct": true,
+      "latency_ms": 47.58890002267435
+    },
+    {
+      "index": 5,
+      "true_label": 6,
+      "true_class": "frog",
+      "top3": [
+        {
+          "class": "frog",
+          "label": 6,
+          "prob": 0.9993107318878174
+        },
+        {
+          "class": "cat",
+          "label": 3,
+          "prob": 0.000296823272947222
+        },
+        {
+          "class": "dog",
+          "label": 5,
+          "prob": 0.000201105372980237
+        }
+      ],
+      "correct": true,
+      "latency_ms": 49.13399997167289
+    },
+    {
+      "index": 6,
+      "true_label": 1,
+      "true_class": "automobile",
+      "top3": [
+        {
+          "class": "automobile",
+          "label": 1,
+          "prob": 0.9999697208404541
+        },
+        {
+          "class": "truck",
+          "label": 9,
+          "prob": 3.0032893846509978e-05
+        },
+        {
+          "class": "ship",
+          "label": 8,
+          "prob": 2.3775697854944156e-07
+        }
+      ],
+      "correct": true,
+      "latency_ms": 48.82000002544373
+    },
+    {
+      "index": 7,
+      "true_label": 6,
+      "true_class": "frog",
+      "top3": [
+        {
+          "class": "frog",
+          "label": 6,
+          "prob": 1.0
+        },
+        {
+          "class": "cat",
+          "label": 3,
+          "prob": 3.145372417384662e-13
+        },
+        {
+          "class": "bird",
+          "label": 2,
+          "prob": 2.752685766162894e-15
+        }
+      ],
+      "correct": true,
+      "latency_ms": 49.1092000156641
+    }
+  ]
+}

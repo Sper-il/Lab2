@@ -24,7 +24,7 @@
 
 - Định nghĩa bài toán và phạm vi (Practice 2, Chương 3).
 - Quyết định dùng CIFAR-10 theo ví dụ trong slide 24.
-- Quyết định stack CPU-only do máy không có GPU NVIDIA.
+- Quyết định môi trường: pipeline M1/demo/test chạy local CPU-only (máy không có GPU NVIDIA); train nặng (sweep 30 cấu hình + retrain 20 epoch) chạy trên **GPU Colab T4 có AMP**, ảnh 64×64.
 - Toàn bộ phương pháp đánh giá và chọn metric (accuracy, macro F1, confusion matrix).
 - Toàn bộ review cuối cùng cho code AI generate.
 - Toàn bộ commit (AI có thể nháp, người quyết định).
@@ -62,22 +62,32 @@
 | `docs/plan-m2-m4.md` | Plan chi tiết M2/M3/M4 — file cần tạo, chức năng từng hàm, test, tiêu chí, ước lượng thời gian train đã đo thật | "Cho tôi plan chia việc phần m2 m3 m4, làm file gì làm ở đâu file đó có chức năng gì" (+ bản rewrite theo format PHASE2_PLAN) |
 | `src/models/registry.py` | `BACKBONE_REGISTRY` (3 backbone + `block_units` introspect), `resolve_spec`, `get_module` | "làm và chạy phần m2 giúp tôi" (plan `docs/plan-m2-m4.md` §1) |
 | `src/models/factory.py` | `ModelConfig`, `build_model`, `replace_head` (Linear + Sequential), `freeze_backbone`, `unfreeze_last`, `count/describe_model` | "làm và chạy phần m2 giúp tôi" |
-| `src/models/__main__.py` + `configs/model_config.yaml` | CLI khám phá (`--model/--strategy/--print-model`) + config mặc định resnet18 freeze | "làm và chạy phần m2 giúp tôi" |
+| `src/models/__main__.py` + `configs/model_config.yaml` | CLI khám phá (`--model/--strategy/--print-model`) + config mặc định resnet18 fine-tune | "làm và chạy phần m2 giúp tôi" |
 | `tests/unit/test_factory.py` + `tests/integration/test_model_pipeline.py` | 17 unit + 6 integration test M2 | "làm và chạy phần m2 giúp tôi" |
 | `docs/reports/m2_models_report.md` | Report M2: bảng params, architecture exploration, adaptation, model đã chọn | "làm và chạy phần m2 giúp tôi" |
 | `notebooks/20261026_eda_cifar10_demo.ipynb` | EDA CIFAR-10 (bincount 5000/1000, split 45k/5k/10k, ảnh mẫu) + demo factory 3 backbone (forward → `(1,10)`) | "làm cho tôi notebook demo" (số liệu từ `metrics.json`/`model_info.json`, logic đã verify trên `.venv`) |
 | `docs/AUDIT_LOG.md` | Audit M1+M2: 4 lỗi code + 8 vấn đề docs, trạng thái xử lý | "coi cách docs có thiếu cái gì không" |
 | `docs/reports/final_report.md` | Báo cáo tổng hợp M1+M2: data, model, đối chiếu 14 yêu cầu đề, hạn chế, việc còn lại M3–M5 | "làm cho tôi báo cáo tổng hợp" |
 | `src/training/loss.py` + `optimizer.py` + `scheduler.py` + `tensorboard_utils.py` + `trainer.py` | M3 training loop (`zero_grad→forward→loss→backward→step`), loss/opt/scheduler factory, TB scalar/histogram/grad/image/graph | "chạy toàn bộ giúp tôi / làm liên tục cho tới khi xong" (plan `docs/plan-m2-m4.md` §2) |
-| `src/training/__main__.py` + `configs/train_config.yaml` | CLI train + sweep models×lr×bs, ghi `metrics.json`/`config.yaml`/`logs.txt`/`tb/`; mặc định Tier B 64×64 | "chạy toàn bộ giúp tôi" |
+| `src/training/__main__.py` + `configs/train_config.yaml` | CLI train + sweep models×lr×bs, ghi `metrics.json`/`config.yaml`/`logs.txt`/`tb/`; mặc định ảnh 64 + `use_amp: true` để chạy nhanh trên GPU | "chạy toàn bộ giúp tôi" |
 | `src/evaluation/metrics.py` (sửa) + `visualize.py` (sửa) | `EvalResult` dataclass + `evaluate_model(device="cpu")`, `classification_report` có `accuracy`/`macro avg`, `plot_*` nhận `out_path` | "tiếp tục làm cho đến khi xong" (fix cho khớp test nhóm) |
 | `src/evaluation/__main__.py` + `configs/eval_config.yaml` | CLI eval: checkpoint → test loader → `metrics.json` + PNG | "chạy toàn bộ giúp tôi" (plan §M4) |
 | `tests/unit/test_training_components.py` + `tests/integration/test_training_loop.py` | 9 unit + 4 integration M3 (FakeData, <10s) | "chạy toàn bộ giúp tôi" |
 | `docs/reports/m3_training_report.md` + `m4_evaluation_report.md` | Report M3/M4: phủ đề E2/E3/O9/O10/O11, test, kết quả train thật | "nhớ cập nhật docs" |
 | `src/models/registry.py` (sửa) + `tests/unit/test_factory.py` (thêm) | Fix B4: `get_module` ưu tiên attribute (DenseNet `features.denseblock4` là Sequential key chuỗi) + test `test_finetune_all_models` (18 test factory) | sweep FT DenseNet crash → fix + verify 3 model × 2 strategy |
 | `models/` (lấp đầy) | `README.md` + `configs/*.yaml` + `trained/*.json` + `.gitkeep`; copy `*-best.pt` local (không push, `.gitignore` chặn) | "trong folder models sao trống trơn vậy" |
-| `notebooks/20261029_train_eval_demo.ipynb` | Demo M3/M4 bằng số thật Tier B (`metrics.json` run 212336): history train, vẽ lại curves, per-class F1, CM | plan §6 (notebook demo M3/M4 đang thiếu) |
-| `results/runs/20261029-220833/` + `20261030-023250/` | Sweep FT 3 model Tier B (R18 test 0.8273 / VGG 0.8331 / Dense **0.8474**) + sweep E2 grid 2×2 | "làm cho tới khi hoàn thành" (không smoke test, chạy thật) |
+| `notebooks/20261029_train_eval_demo.ipynb` | Demo M3/M4 bằng số liệu train (history, curves, per-class F1, CM) | plan §6 (notebook demo M3/M4 đang thiếu) |
+| `notebooks/colab_sweep.ipynb` | Sweep 30 cấu hình fine-tune Adam 5 epoch trên GPU Colab T4 (lr × bs, workers = 2, AMP) — log `results/sweep-FT-lr-bs.log`, tổng hợp `results/OTM_RESULTS.md` | "gôm kết quả train trong 1 file .md" + sweep lr×bs |
+| `notebooks/colab_best3_retrain.ipynb` | Retrain 3 cấu hình tốt nhất **20 epoch** trên GPU Colab T4 + chấm test (`confusion_matrix.png`, `per_class_f1.png`) — kết quả `results/TEST_RESULTS.md`: R18 0.8626 / VGG11 0.8774 ⭐ / DenseNet121 0.8715 | "làm 1 file notebook để chạy trên google colab" + "tích hợp chấm test" + "chỉnh lên 20 epoch" |
+| `results/runs/20261031-120033/` + `20261031-121323/` + `20261031-122534/` | 3 run chốt retrain 20 epoch (R18 test 0.8626 / VGG11 test 0.8774 ⭐ / DenseNet121 test 0.8715) + `eval/*.png` | "chạy lại 3 cấu hình tốt nhất 20 epoch + chấm test trên Colab T4" |
+| `docs/architecture.md` | Snapshot kiến trúc M1–M4 + sơ đồ tổng thể + milestones + rủi ro (khung chuẩn skill) | "bổ sung các docs còn thiếu" |
+| `docs/api.md` | Interfaces từng module: hàm nào, input/output gì, lệnh chạy nào | "bổ sung các docs còn thiếu" |
+| `docs/description.md` | Mô tả project/module theo chuẩn Define 6 mục | "bổ sung các docs còn thiếu" |
+| `docs/data.md` | Chuẩn pipeline raw → processed → splits + chống leakage + transform | "bổ sung các docs còn thiếu" |
+| `docs/CHANGELOG.md` | Version model/dataset + breaking changes (ảnh 224→64, `freeze_head_full`, fix B4) | "bổ sung các docs còn thiếu" |
+| `docs/demo.md` | Kịch bản demo 1 lệnh + input mẫu + output `results/demo/` | "bổ sung các docs còn thiếu" |
+| `src/evaluation/visualize_html.py` + `report.html` 3 run `20261031-*` | Render `metrics.json` + PNG thành 1 file HTML offline (bảng pass/fail, curves, mẫu tốt/xấu, case tệ nhất, latency) | "bổ sung các docs còn thiếu" — kiểm chứng mở double-click được, số khớp `metrics.json` |
+| `src/demo/__main__.py` + `data/processed/demo/` + `results/demo/20261107-094717/` | Demo 1 lệnh: VGG11 trên 8 ảnh test thật, đúng 6/8, ~50 ms/ảnh CPU; `predictions.json` + `index.html` | "bổ sung các docs còn thiếu" — chạy thật trên `.venv`, sửa lỗi encoding cp1252 |
 
 ## 5. Prompt Purpose (cho mỗi artifact)
 
@@ -114,7 +124,8 @@
 
 - [x] Chạy code end-to-end trên môi trường sạch (venv mới tạo, dependency pin rõ ràng).
 - [ ] So sánh output với baseline / đáp án đã biết.
-- [x] Viết unit/integration test mà không có thay đổi thì sẽ fail (47 test cho M1; 23 test cho M2).
+- [x] Viết unit/integration test mà không có thay đổi thì sẽ fail (47 test cho M1; 24 test cho M2; 102 test full `pytest -q` — PASS 2026-11-07, ~137s local CPU).
+- [x] Reproduce kết quả từ fresh clone + ghi lại command — demo 1 lệnh (`python -m src.demo`) và `report.html` offline tái tạo được từ `metrics.json` + PNG đã push; weight `*.pt` tái tạo bằng `python -m src.training` với seed 42.
 - [ ] Reproduce kết quả từ fresh clone + ghi lại command.
 - [ ] Sanity-check metric theo Definition of Done.
 - [x] **Đối chiếu docs với `đề.txt`**: mỗi yêu cầu trong đề (E1–E3, O1–O11) được ánh xạ tới file/module cụ thể trong bảng "Đối chiếu với đề bài"; mọi shape, số liệu và lệnh trong docs đã được đối chiếu lại với code thật.
@@ -123,7 +134,7 @@
 
 | Kiểm tra | Kết quả |
 |----------|---------|
-| `pytest tests/unit/test_factory.py` | **17 passed** in 31.8s (`weights=None`, không cần mạng) |
+| `pytest tests/unit/test_factory.py` | **18 passed** in 31.8s (`weights=None`, không cần mạng; gồm `test_finetune_all_models`) |
 | `pytest tests/integration/test_model_pipeline.py` | **6 passed** in 42.6s |
 | `python -m src.models --model resnet18` | Total 11,181,642 / trainable 5,130 (0.046%) / output `(1, 10)` — run `20261026-115633` |
 | `python -m src.models --model vgg11` | Total 128,807,306 / trainable 40,970 (0.032%) / output `(1, 10)` — run `20261026-120218` |

@@ -58,14 +58,16 @@ Ngon nhất VGG11: lr 0,0001 batch 32 với 0,8538.
 
 Ngon nhất toàn sweep: DenseNet121 lr 0,0005 với 0,8618 ở cả batch 32 và 64.
 
-## 3. Kết luận chỉnh 2 siêu tham số
+## 2. Kết luận chỉnh 2 siêu tham số
 
 1. **Learning rate quyết định rõ rệt.** Vùng lr nhỏ 0,0001 tới 0,001 cho điểm cao nhất ở cả 3 mô hình. Từ lr 0,003 trở lên điểm tụt mạnh, rõ nhất ở VGG11: lr 0,0001 được 0,8538 nhưng lr 0,005 chỉ còn 0,7708.
-2. **Batch-size 32 và 64 chênh nhau rất ít.** ResNet18 hơn kém nhau khoảng 0,01, VGG11 và DenseNet cũng tương tự. Batch 64 chạy nhanh hơn hẳn nên là lựa chọn hợp lý trên GPU.
+2. **Batch-size 32 và 64 chênh nhau rất ít.** ResNet18 hơn kém nhau khoảng 0,01, VGG11 và DenseNet cũng tương tự. Batch 64 chạy nhanh hơn; chốt thực tế: DenseNet121 lấy batch 64, ResNet18 và VGG11 lấy batch 32 (theo đúng val ngon nhất từng model).
 3. **Xếp hạng mô hình giữ nguyên.** DenseNet121 (0,8618) hơn VGG11 (0,8538) hơn ResNet18 (0,8456).
 4. **Tốc độ trên GPU nhanh gấp nhiều lần CPU.** ResNet18 và VGG11 chỉ mất khoảng 27 tới 35 giây mỗi epoch, DenseNet121 mất khoảng 48 tới 86 giây mỗi epoch.
 
-## 4. Cấu hình chốt
+## 3. Cấu hình chốt (sweep 5 epoch → retrain 20 epoch)
 
-- DenseNet121, Adam, lr 0,0005, batch 64, val 0,8618 — ngon nhất mà chạy nhanh.
-- Nếu máy yếu hơn: ResNet18, Adam, lr 0,0001, batch 32, val 0,8456.
+- DenseNet121, Adam, lr 0,0005, batch 64, val sweep 0,8618 — ngon nhất sweep, chốt retrain 20 epoch.
+- VGG11, Adam, lr 0,0001, batch 32, val sweep 0,8538 — chốt retrain 20 epoch.
+- ResNet18, Adam, lr 0,0001, batch 32, val sweep 0,8456 — chốt retrain 20 epoch.
+- Kết quả retrain 20 epoch + chấm test 10.000 ảnh (`best_epoch` trong `metrics.json` đếm từ 0, nên epoch hiển thị = best_epoch + 1): xem `results/TEST_RESULTS.md` (VGG11 test 87,74% ngon nhất).

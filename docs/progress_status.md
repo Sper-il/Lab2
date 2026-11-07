@@ -1,7 +1,7 @@
 # Practice 2 — Hands-on with Pre-trained Neural Network Architectures
 
 > Single source of truth cho **đang làm gì, tại sao, và đã làm được gì**.
-> Cập nhật lần cuối: 2026-10-25 15:20
+> Cập nhật lần cuối: 2026-11-01 09:30 (chốt retrain 20 epoch GPU Colab T4)
 
 ## Project Context (Phase 1 — DEFINE)
 
@@ -11,7 +11,7 @@
 | Slug | `lab2` |
 | Bài toán | Phân loại ảnh CIFAR-10 (10 lớp) bằng model pre-trained ImageNet từ `torchvision.models`, so sánh transfer learning (freeze) và fine-tuning (unfreeze lớp cuối) |
 | Người dùng mục tiêu | Sinh viên môn AI/ML — Viện CNTT&ĐT, TSU TP.HCM |
-| Input | Ảnh RGB 32×32 → resize 224×224, batch `[B, 3, 224, 224]`, `float32`, normalize theo ImageNet mean/std |
+| Input | Ảnh RGB 32×32 → resize 64×64 trong các run train chốt (override `image_size: 64` để train nhanh trên GPU), hoặc 224×224 chuẩn ImageNet khi chạy pipeline M1/demo (`configs/data_config.yaml`), batch `[B, 3, 64, 64]` hoặc `[B, 3, 224, 224]`, `float32`, normalize theo ImageNet mean/std |
 | Output | Logits `[B, 10]` → nhãn lớp + confidence |
 | Tính năng cốt lõi | Must: nạp model pre-trained (ResNet18/VGG11/DenseNet121), thay head, freeze/unfreeze, training loop, validation, TensorBoard, test evaluation. Should: config YAML, bảng so sánh, augmentation, metrics.json. Could: scheduler, gradient clipping, ONNX |
 | Tech construction | Python 3.13, PyTorch 2.14.1 (CPU), torchvision 0.29.1, TensorBoard 2.21.0, PyYAML, pytest |
@@ -31,13 +31,13 @@
 - Chọn ResNet18 (nhẹ, baseline chuẩn), VGG11 (đơn giản, dễ học), DenseNet121 (skip connection, mạnh hơn) để "Experiment with different pre-trained models".
 
 **Where / When / Which?**
-- Where: local, **CPU-only** (máy không có NVIDIA GPU → `nvidia-smi` không tồn tại).
+- Where: train nặng trên **GPU Colab T4 có AMP** (sweep 30 cấu hình 5 epoch + retrain 20 epoch); local CPU-only dùng cho pipeline M1/demo/test.
 - When: chạy offline theo batch experiment, mỗi run sinh `results/runs/<timestamp>/`.
 - Which: PyTorch (framework chính của Chương 3), torchvision (models + datasets + transforms), TensorBoard (theo slide 13–15).
 
 **How?**
 - Pipeline: `CIFAR10 → transforms → DataLoader → backbone (freeze/unfreeze) → head(10) → CrossEntropyLoss → Adam → train loop → val → TensorBoard → checkpoint → test eval`.
-- Hyperparameter mặc định: lr 1e-3 (freeze) / 1e-4 (fine-tune), batch 64, 5 epoch, Adam, weight_decay 1e-4.
+- Hyperparameter chốt: fine-tune Adam, ảnh 64, 20 epoch — ResNet18 lr 0.0001 bs 32, VGG11 lr 0.0001 bs 32, DenseNet121 lr 0.0005 bs 64 (chọn từ sweep 30 cấu hình 5 epoch).
 - Augmentation: RandomCrop(32, padding=4) + RandomHorizontalFlip + Normalize(ImageNet).
 - Metric: accuracy (val để chọn best), accuracy + macro-F1 + confusion matrix (test).
 
@@ -48,7 +48,7 @@
 | # | Yêu cầu đề bài | Hiện thực | Module | Trạng thái |
 |---|-----------------|-----------|--------|-----------|
 | E1 | Experiment with different pre-trained models (VGG, DenseNet, etc.) | `src/models/factory.py` | M2 | ✅ |
-| E2 | Adjust the hyperparameters (lr, batch size, etc.) | `configs/*.yaml` + `src/training/` + sweep `20261030-043458` (grid 2×2) | M3, M5 | ✅ |
+| E2 | Adjust the hyperparameters (lr, batch size, etc.) | Sweep 30 cấu hình fine-tune Adam 5 epoch + retrain 3 cấu hình tốt nhất 20 epoch | `configs/*.yaml` + `src/training/` + `notebooks/colab_sweep.ipynb` + `notebooks/colab_best3_retrain.ipynb` | M3, M5 | ✅ |
 | E3 | Use TensorBoard to monitor the training process | `src/training/trainer.py` + `tb/` mỗi run, tag scalar/histogram/grad/image | M3 | ✅ |
 | O1 | Load a Pre-trained Model (`weights=`/`pretrained=True`) | `src/models/factory.py` | M2 | ✅ |
 | O2 | Explore the Model Architecture — print model, identify layers & params | `src/models/factory.py` | M2 | ✅ |
@@ -60,22 +60,22 @@
 | O8 | Use `torch.utils.data.DataLoader` to create batches | `src/data/dataloader.py` | **M1** | ✅ |
 | O9 | Define the loss function and optimizer | `src/training/loss.py` + `optimizer.py` (CE/label-smoothing/focal; Adam/AdamW/SGD) | M3 | ✅ |
 | O10 | Write the training loop | `src/training/trainer.py` (đúng 6 bước slide 8–9 Ch.3) | M3 | ✅ |
-| O11 | Evaluate the Model on a test dataset | `src/evaluation/` (4 eval thật: freeze 0.5582 / FT R18 0.8273 / VGG 0.8331 / Dense 0.8474) | M4 | ✅ |
+| O11 | Evaluate the Model on a test dataset | `src/evaluation/` (3 eval chốt 20 epoch: R18 0.8626 / VGG11 0.8774 ⭐ / DenseNet121 0.8715) | M4 | ✅ |
 
 Bước 1 (Environment Setup) — ✅ xong: `requirements.txt` pin torch 2.14.1 / torchvision 0.29.1 / tensorboard 2.21.0, bản CPU.
 
 ## Architecture Snapshot (Phase 2 — DESIGN)
 
 - Pattern: transfer learning pipeline (config-driven, CLI theo module).
-- Modules: `src/data` (dataset/transforms/split) ✅ M1, `src/models` (factory + head replacement + freeze logic) ✅ M2, `src/training` (trainer + scheduler + checkpoint + sweep E2 grid 2×2) ✅ M3, `src/evaluation` (metrics + confusion matrix + visualize, 4 eval thật) ✅ M4.
+- Modules: `src/data` (dataset/transforms/split) ✅ M1, `src/models` (factory + head replacement + freeze logic) ✅ M2, `src/training` (trainer + scheduler + checkpoint + sweep 30 cấu hình + retrain 20 epoch) ✅ M3, `src/evaluation` (metrics + confusion matrix + visualize, 3 eval chốt 20 epoch) ✅ M4.
 - Data flow: `raw (torchvision download) → transforms → batches → model → logits → loss → weights → metrics.json`.
 - Risks: xem bảng dưới.
 
 ## Active Module: M1 — Data Pipeline (dataset/transforms/split)
 
-- **Describe** — dựng pipeline data cho CIFAR-10: tải/verify dataset, chia train/val phân tầng, transform train/val, DataLoader. Input: `data/raw/cifar-10-python.tar.gz`. Output: 3 DataLoader (train 45k / val 5k / test 10k), ảnh `[B,3,224,224]` float32 đã normalize ImageNet.
+- **Describe** — dựng pipeline data cho CIFAR-10: tải/verify dataset, chia train/val phân tầng, transform train/val, DataLoader. Input: `data/raw/cifar-10-python.tar.gz`. Output: 3 DataLoader (train 45k / val 5k / test 10k), ảnh float32 đã normalize ImageNet — `[B,3,224,224]` với pipeline demo M1, `[B,3,64,64]` với các run train chốt (`image_size: 64`).
 - **Goal / purpose** — nền tảng dữ liệu reproducible cho M2–M5: mọi experiment sau dùng chung split & transform, seed cố định.
-- **Pipeline** — `data/raw → Cifar10Dataset (in-memory) → stratified_indices(seed=42) → TransformSubset(train_transform|val_transform) → DataLoader → [B,3,224,224]`.
+- **Pipeline** — `data/raw → Cifar10Dataset (in-memory) → stratified_indices(seed=42) → TransformSubset(train_transform|val_transform) → DataLoader → [B,3,64,64] (train chốt) / [B,3,224,224] (demo M1)`.
 - **How / experiment plan**
   - [x] `src/data/transforms.py` — RandomCrop(32,pad=4)+Flip (train) / Resize+ToTensor+Normalize (val), ImageNet mean/std
   - [x] `src/data/dataset.py` — `Cifar10Dataset` nạp ảnh vào RAM (uint8), `TransformSubset` giữ transform riêng
@@ -101,13 +101,15 @@ Bước 1 (Environment Setup) — ✅ xong: `requirements.txt` pin torch 2.14.1 
 |---|--------|------|--------|--------|---------|
 | 0 | M0 — Environment & Scaffold | 2026-10-25 | ✅ | — | Python 3.13.2, torch 2.14.1+cpu, torchvision 0.29.1+cpu, tensorboard 2.21.0; CPU-only |
 | 0b | M0b — Dataset CIFAR-10 | 2026-10-25 | ✅ | — | Tải + giải nén + verify: 50k train / 10k test, 10 lớp cân bằng, ảnh 32×32 |
-| 1 | M1 — Data pipeline (dataset/transforms/split) | 2026-10-25 | ✅ | `d0321eb` + `28aa1ff` | 45k/5k/10k stratified seed=42; ảnh [B,3,224,224] float32; 47 test pass; run `20261025-150847` |
+| 1 | M1 — Data pipeline (dataset/transforms/split) | 2026-10-25 | ✅ | `d0321eb` + `28aa1ff` | 45k/5k/10k stratified seed=42; ảnh `[B,3,224,224]` (demo M1) / `[B,3,64,64]` (train chốt); 47 test pass; run `20261025-150847` |
 | 1b | M1b — Docs align với `đề.txt` | 2026-10-25 | ✅ | `a1a6b71` | Ma trận truy vết 14 yêu cầu đề; sửa shape, số liệu bịa, path không tồn tại; thêm MD5 check cho `verify_data.py` |
 | 2 | M2 — Model factory (backbone/head/freeze) | 2026-10-26 | ✅ | `75455dd` (+`81fa425` fix B4) | `registry.py` + `factory.py` + CLI khám phá; 24 test pass (18 unit + 6 integration); verify weights thật cả 3 model; report `docs/reports/m2_models_report.md` |
 | 2b | M2b — Docs bổ sung (notebook/audit/final report) | 2026-10-26 | ✅ | (commit này) | `notebooks/20261026_eda_cifar10_demo.ipynb` + `docs/AUDIT_LOG.md` + `docs/reports/final_report.md`; sửa D1–D5 trong audit |
-| 3 | M3 — Training loop + TensorBoard | 2026-10-29 | ✅ | `390b21d` | `trainer.py` (zero_grad→forward→loss→backward→step), loss/opt/scheduler/tb_utils, CLI sweep models×lr×bs; 14 test pass; 4 run thật Tier B: R18 freeze val 0.5654 + FT 3 model (R18 0.8296 / VGG 0.8316 / Dense 0.8524) |
-| 4 | M4 — Evaluation & metrics | 2026-10-30 | ✅ | — | `EvalResult` + `evaluate_model(device=cpu)` + `out_path` plots + CLI eval + `eval_config.yaml`; 18 test pass; 4 eval thật (freeze 0.5582 / R18 FT 0.8273 / VGG FT 0.8331 / Dense FT 0.8474) |
-| 5 | M5 — Experiment sweep + báo cáo | 2026-10-30 | ✅ | `5b810f0` | Sweep FT 3 model xong (Dense **0.8474** tốt nhất) + sweep E2 grid 2×2 `20261030-043458` xong (lr 1e-3 tối ưu freeze, val 0.5654); bảng so sánh README §8 |
+| 3 | M3 — Training loop + TensorBoard | 2026-10-31 | ✅ | `2e98e31` | `trainer.py` (zero_grad→forward→loss→backward→step), loss/opt/scheduler/tb_utils, CLI sweep models×lr×bs; 14 test pass; sweep 30 cấu hình 5 epoch GPU T4 (`OTM_RESULTS.md`) + retrain 3 cấu hình tốt nhất 20 epoch: R18 val 0.8634, VGG11 val 0.8786, DenseNet121 val 0.8800 |
+| 4 | M4 — Evaluation & metrics | 2026-10-31 | ✅ | `2e98e31` | `EvalResult` + `evaluate_model` + `out_path` plots + CLI eval + `eval_config.yaml`; 18 test pass; 3 eval chốt 20 epoch test 10.000 ảnh: R18 0.8626 / VGG11 0.8774 ⭐ / DenseNet121 0.8715 (`TEST_RESULTS.md` + `eval/*.png`) |
+| 5 | M5 — Experiment sweep + báo cáo | 2026-10-31 | ✅ | `2e98e31` | Sweep 30 cấu hình xong (DenseNet121 0.8618 tốt nhất sweep 5 epoch) + retrain 20 epoch xong (VGG11 test **0.8774** tốt nhất); bảng so sánh README §8 + `TEST_RESULTS.md` |
+| 6 | M6 — Docs chuẩn skill còn thiếu | 2026-11-07 | ✅ | (commit này) | Bổ sung `architecture.md` + `api.md` + `description.md` + `data.md` + `demo.md` + `CHANGELOG.md` + `model.md` + `evaluation.md` + `audit_code.md` theo folder convention skill; `visualize_html.py` + `report.html` offline 3 run chốt; `src/demo` demo 1 lệnh (8/8 ảnh mẫu, VGG11 đúng 6/8, ~50 ms/ảnh CPU) |
+| 7 | M6b — Demo 1 lệnh + HTML visualize | 2026-11-07 | ✅ | (commit này) | `src/demo/__main__.py` (export `data/processed/demo/` 8 PNG + `labels.json`, suy luận + `results/demo/<ts>/predictions.json + index.html`); `report.html` 3 run `20261031-*` (pass/fail, curves, tốt/xấu, latency) |
 
 > **Kế hoạch chi tiết M2–M4:** `docs/plan-m2-m4.md` — danh sách file, chức năng từng hàm, code mẫu đã kiểm chứng, test, tiêu chí hoàn thành, và ước lượng thời gian train **đã đo thật** trên máy này.
 
@@ -118,7 +120,7 @@ Bước 1 (Environment Setup) — ✅ xong: `requirements.txt` pin torch 2.14.1 
 | 2026-10-25 | Dùng Python 3.13.2 | 3.11 (launcher hỏng), 3.12 (không có) | Chỉ 3.13 cài được và tương thích torch 2.14.1+cpu cp313 |
 | 2026-10-25 | Cài bản CPU của PyTorch (`+cpu`) | CUDA wheel (không có GPU) | `nvidia-smi` không tồn tại trên máy |
 | 2026-10-25 | Dataset = CIFAR-10 | MNIST, FashionMNIST, STL-10 | Đúng ví dụ slide 24; tải tự động, 10 lớp |
-| 2026-10-25 | Up-sample 32×32 → 224×224 cho backbone ImageNet | Resize 224 là bắt buộc với weight ImageNet | Backbone pre-trained kỳ vọng input 224; thay đổi kích thước phá vỡ ý nghĩa weight |
+| 2026-10-25 | Ảnh train chốt resize lên **64×64** (override `image_size: 64` trong `train_config.yaml`), ảnh demo M1 giữ **224×224** chuẩn ImageNet | Resize 224 cho mọi run | Backbone pre-trained kỳ vọng input 224 nhưng train GPU chốt dùng 64 cho nhanh (~27–86 giây/epoch AMP) mà vẫn đạt 86–88% test; demo M1 giữ 224 để đúng chuẩn |
 | 2026-10-25 | Config YAML cho mọi experiment | Hardcode trong code | Reproducibility: mỗi run ghi lại `config.yaml` |
 | 2026-10-25 | 5.000 ảnh val lấy từ train | Dùng test set làm val | Giữ test set sạch cho đánh giá cuối |
 | 2026-10-25 | `requirements.txt` pin không kèm hậu tố `+cpu` | `torch==2.14.1+cpu` | Wheel PyPI chính thức trên Windows đã là CPU; `pip install -r requirements.txt` phải chạy được với index mặc định |
@@ -138,7 +140,7 @@ Bước 1 (Environment Setup) — ✅ xong: `requirements.txt` pin torch 2.14.1 
 | 2026-10-25 | Đánh dấu rõ lệnh/lệnh-cfg **chưa tồn tại** trong README thay vì để trông như đã có | Bỏ hẳn mục 6.6 | `src/models`, `src/training`, `src/evaluation` mới chỉ có `__init__.py`; `configs/train_config.yaml` chưa tạo. Ghi rõ trạng thái "thiết kế dự kiến" tránh gây hiểu nhầm là đã chạy được |
 | 2026-10-25 | Bổ sung kiểm tra **MD5 archive** vào `scripts/verify_data.py` | Chỉ kiểm tra số mẫu / lớp / shape | `download_data.py` và docs đều claim "có kiểm tra MD5 tích hợp" nhưng script thực tế **không** kiểm tra → claim sai. Nay đã khớp: hash theo chunk, so với `c58f30108f718f92721af3b95e74349a`, exit 1 + hướng dẫn tải lại |
 | 2026-10-25 | Ghi rõ 4 tiêu chí đánh giá là **mục tiêu tự đặt**, không phải ngưỡng từ đề bài | Để trông như yêu cầu của đề | `đề.txt` không đặt ngưỡng accuracy nào; ghi rõ nguồn gốc tránh hiểu nhầm là yêu cầu giáo viên |
-| 2026-10-25 | Chiến lược **2 tầng kích thước ảnh** cho M3: Tier A = 224×224 (báo cáo chính), Tier B = 64×64 (sweep rộng) | Chỉ dùng 224×224 cho mọi run | **Đã đo thật** (ResNet18, batch 32, 8 threads): freeze 224 = 36.6 min/epoch, 64 = 4.8 min/epoch; VGG11 224 = 144 min/epoch (12 giờ cho 5 epoch — không khả thi trên CPU). Tier B cho phép so sánh cả 3 model + sweep siêu tham số trong thời gian chấp nhận được |
+| 2026-11-01 | Train chốt trên **GPU Colab T4 có AMP** (sweep 30 cấu hình 5 epoch + retrain 3 cấu hình 20 epoch, ảnh 64) | Chỉ train local CPU | Local CPU quá chậm (VGG11 224 ~144 phút/epoch); GPU T4 chỉ ~27–86 giây/epoch nên mới sweep/retrain được; local giữ lại cho M1/demo/test |
 | 2026-10-25 | Tách `src/models/registry.py` (bảng tra cứu) khỏi `src/models/factory.py` (logic) | Gộp tất cả vào 1 file | `registry.py` là dữ liệu (đổi khi thêm model), `factory.py` là logic (ổn định). Thêm `mobilenet_v3_small` sau này chỉ sửa 1 file |
 | 2026-10-25 | `unfreeze_last` dùng **số block** (`freeze_until: 1`) thay vì tên layer cụ thể | Hardcode tên layer cho từng model | 3 model có cấu trúc khác nhau (`layer4` vs `features[-3:]` vs `denseblock4`) — dùng số block khiến code chung, chỉ khác cách xác định "block cuối" |
 | 2026-10-25 | Tự tính macro-F1 bằng `torch` thuần, **không** thêm `scikit-learn` | Dùng `sklearn.metrics` | Thêm dependency chỉ để tính F1 là không đáng; giữ `requirements.txt` gọn và tránh rủi ro cài đặt |
@@ -151,7 +153,7 @@ Bước 1 (Environment Setup) — ✅ xong: `requirements.txt` pin torch 2.14.1 
 
 | Rủi ro | Khả năng | Tác động | Giảm thiểu | Phát hiện |
 |--------|----------|----------|------------|-----------|
-| Training quá chậm trên CPU (VGG11/DenseNet121) | Cao | Trượt deadline | Epoch ít (5), batch 64, `num_workers=4`, đo 1 epoch trước khi sweep | Log thời gian mỗi epoch |
+| Training quá chậm trên CPU (VGG11/DenseNet121) | Cao | Đã xảy ra → chuyển train chốt lên GPU Colab T4 | Sweep 30 cấu hình 5 epoch + retrain 20 epoch trên T4 có AMP (~27–86 giây/epoch); local chỉ chạy M1/demo/test | Log thời gian mỗi epoch + `sweep-FT-lr-bs.log` |
 | Overfitting nặng do ảnh 32×32 upsample | Trung bình | Test acc thấp hơn val | Augmentation (crop/flip), weight decay, theo dõi gap val−train | Biểu đồ TensorBoard |
 | Tải CIFAR-10 lỗi mạng | Trung bình | Không chạy được | `download=True` có retry; fallback sang `FakeData` cho smoke test | Exception khi load |
 | Overfit từ quá nhiều epoch | Trung bình | Kết quả kém | Early stop theo val accuracy, lưu best checkpoint | Val acc giảm |
@@ -163,16 +165,16 @@ Bước 1 (Environment Setup) — ✅ xong: `requirements.txt` pin torch 2.14.1 
 - [x] Tính năng cốt lõi (Must/Should/Could)
 - [x] Tech stack + lý do
 - [x] Metric đánh giá + target
-- [ ] Có được dùng `torch.compile` / AMP không (không — CPU-only, giữ đơn giản)
+- [x] Có được dùng `torch.compile` / AMP không — có, **đã dùng AMP trên GPU Colab T4** (`use_amp: true` trong `train_config.yaml` + `colab_best3_retrain.ipynb`); local CPU giữ đơn giản, không dùng `torch.compile`.
 
 ## Definition of Done (áp dụng mỗi module)
 
 - [x] Đúng yêu cầu
 - [x] Code chạy end-to-end
-- [x] Tests pass — **102/102** (47 M1 + 24 M2 + 13 M3 + 18 M4; `pytest -q` ~96s)
-- [x] Không có secrets; không push artifact nặng (`*.pt` ~590 MB local-only, `tb/` local-only — `metrics.json`/PNG/config đã push)
+- [x] Tests pass — **102/102** (47 M1 + 24 M2 + 13 M3 + 18 M4; `pytest -q` ~137s local CPU)
+- [x] Không có secrets; không push artifact nặng (`*.pt` ~590 MB local-only, `tb/` local-only — `metrics.json`/PNG/config/`report.html` đã push; `data/processed/demo/` 8 ảnh mẫu + `results/demo/` nhẹ được push)
 - [x] Code đã self-review
 - [x] Có thể giải thích được
-- [x] Docs đã cập nhật (README, `docs/progress_status.md`, `docs/AI_Usage.md`)
+- [x] Docs đã cập nhật (README, `docs/progress_status.md`, `docs/AI_Usage.md` + khung chuẩn đủ: `architecture.md`, `api.md`, `description.md`, `data.md`, `model.md`, `evaluation.md`, `audit_code.md`, `demo.md`, `CHANGELOG.md`)
 - [x] **Docs bám sát `đề.txt`** — mục "Đối chiếu với đề bài" trong `README.md` và `docs/progress_status.md` được cập nhật mỗi milestone
-- [x] Đã committed (Conventional Commit) — `f130862` (M0), `d0321eb`+`28aa1ff` (M1), `a1a6b71` (docs align đề), `75455dd` (M2), `390b21d` (M3/M4 code), `c78f84e` (sweep FT), `c8b6fff` (models/), `5b810f0` (đối chiếu đề+slide, sweep E2)
+- [x] Đã committed (Conventional Commit) — `f130862` (M0), `d0321eb`+`28aa1ff` (M1), `a1a6b71` (docs align đề), `75455dd` (M2), `390b21d` (M3/M4 code), `c78f84e` (sweep FT), `c8b6fff` (models/), `5b810f0` (đối chiếu đề+slide, sweep E2), `2e98e31` (retrain 3 cấu hình 20 epoch + chấm test Colab T4), + commit hiện tại (bổ sung docs chuẩn skill còn thiếu: architecture/api/description/data/demo/CHANGELOG + `visualize_html.py` + `report.html` 3 run + `src/demo` demo 1 lệnh)

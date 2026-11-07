@@ -14,7 +14,8 @@ strategy:
     freeze_until: 1
     unfreezes: [layer4, fc]
     note: BatchNorm trong block duoc mo luon
-input_size: [3, 224, 224]
-run_ref: results/runs/20261029-220833/resnet18-lr0.001-bs32-0/
-test_accuracy: 0.8273
-macro_f1: 0.8258
+    trainable_params_chot_20epoch: 8398858
+input_size: [3, 64, 64]
+run_ref: results/runs/20261031-120033/resnet18-lr0.0001-bs32-0/
+test_accuracy: 0.8626
+macro_f1: 0.8626

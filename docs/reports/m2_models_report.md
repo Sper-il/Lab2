@@ -7,19 +7,19 @@
 
 ## 1. Pre-trained Models Implemented
 
-| Model | Source | Total Params | Trainable (freeze) | Trainable (fine-tune 1 block) |
-|-------|--------|--------------|--------------------|-------------------------------|
+| Model | Source | Total Params | Trainable (freeze) | Trainable (fine-tune 1 block, chốt `freeze_head_full: false`) |
+|-------|--------|--------------|--------------------|------------------------------------------|
 | resnet18 | `torchvision.models` 0.29 | 11,181,642 | 5,130 (0.046%) | 8,398,858 (75.1%) |
-| vgg11 | `torchvision.models` 0.29 | 128,807,306 | 40,970 (0.032%) | 121,946,634 (94.7%) |
-| densenet121 | `torchvision.models` 0.29 | 6,964,106 | 10,250 (0.147%) | 2,168,330 (31.1%) |
+| vgg11 | `torchvision.models` 0.29 | 128,807,306 | 40,970 (0.032%) | 2,400,778 (1.86%) |
+| densenet121 | `torchvision.models` 0.29 | 6,964,106 | 10,250 (0.147%) | 2,696,714 (38.7%) |
 
-Số liệu đo bằng `count_parameters()` sau khi `build_model()` — không ước lượng.
+Số freeze đo bằng `count_parameters()` sau `build_model()` (run `20261026-*`). Số fine-tune chốt lấy từ 3 run retrain 20 epoch (`20261031-120033/-121323/-122534/metrics.json`) với `freeze_until: 1`, `freeze_head_full: false`.
 
 ## 2. Architecture Exploration (đề bài bước 3)
 
 Lệnh: `python -m src.models --model <name> [--print-model]`
 
-Kết quả ResNet18 (weights ImageNet thật, run `results/runs/20261026-115633/`):
+Kết quả ResNet18 (weights ImageNet thật; run CLI M2 `results/runs/20261026-115633/` đã dọn sau M2, số liệu giữ nguyên):
 
 ```text
 Class: ResNet
@@ -64,31 +64,31 @@ Cấu trúc head sau khi thay về 10 lớp:
 
 ## 4. Selected Model
 
-- **Model:** `resnet18`
-- **Strategy mặc định:** `freeze_backbone`
-- **Lý do:**
-  - Nhẹ nhất trong 3 backbone có thể train thực tế trên CPU (11.18M vs 128.8M của VGG11).
-  - Freeze chỉ còn 5,130 params trainable → 1 epoch 224×224 mất 22–37 phút; VGG11 mất ~144 phút/epoch (~12 giờ cho 5 epoch — không khả thi).
-  - DenseNet121 nhẹ (6.96M) nhưng fine-tune 1 block chỉ mở 31.1% — kiến trúc dense connection phức tạp hơn, để dành so sánh ở M3/M5.
-  - Config mặc định nằm trong `configs/model_config.yaml`; M3 override bằng CLI `--models` khi sweep.
+- **Chiến lược chốt:** `fine_tune` (mở block cuối + norm + head, optimizer Adam) — toàn bộ kết quả báo cáo (sweep 30 cấu hình + retrain 20 epoch) đều fine-tune, không dùng freeze.
+- **Config mặc định:** `resnet18` + `fine_tune` (`configs/model_config.yaml`).
+- **Lý do giữ resnet18 làm mặc định:**
+  - Nhẹ nhất trong 3 backbone (11.18M vs 128.8M của VGG11).
+  - Train nhanh nhất trên GPU T4 (~27–35 giây/epoch, ảnh 64, AMP).
+  - DenseNet121 nhẹ (6.96M) nhưng kiến trúc dense connection phức tạp hơn, để dành so sánh ở M3/M5.
+  - Sweep/retrain override bằng CLI `--models` hoặc notebook Colab.
 
 ## 5. Test Results
 
 | Suite | File | Kết quả |
 |-------|------|---------|
-| Unit | `tests/unit/test_factory.py` | 17 passed (31.8s, `weights=None` — không tải ImageNet) |
+| Unit | `tests/unit/test_factory.py` | 18 passed (31.8s, `weights=None` — không tải ImageNet; gồm `test_finetune_all_models` bắt bug B4) |
 | Integration | `tests/integration/test_model_pipeline.py` | 6 passed (42.6s) |
 | CLI verify (weights ImageNet thật) | `python -m src.models --model <name>` | PASS cả 3 — output `(1, 10)`, artifact `model_info.json` |
 
-Tổng: **23/23 pass**.
+Tổng: **24/24 pass** (18 unit + 6 integration).
 
 ### CLI verify chi tiết (weights `DEFAULT` thật)
 
 | Model | Run | Total | Trainable (freeze) | Output |
 |-------|-----|-------|--------------------|--------|
-| resnet18 | `results/runs/20261026-115633/` | 11,181,642 | 5,130 (0.046%) | `(1, 10)` ✓ |
-| vgg11 | `results/runs/20261026-120218/` | 128,807,306 | 40,970 (0.032%) | `(1, 10)` ✓ |
-| densenet121 | `results/runs/20261026-121817/` | 6,964,106 | 10,250 (0.147%) | `(1, 10)` ✓ |
+| resnet18 | CLI verify M2 (run `20261026-115633` đã dọn) | 11,181,642 | 5,130 (0.046%) | `(1, 10)` ✓ |
+| vgg11 | CLI verify M2 (run `20261026-120218` đã dọn) | 128,807,306 | 40,970 (0.032%) | `(1, 10)` ✓ |
+| densenet121 | CLI verify M2 (run `20261026-121817` đã dọn) | 6,964,106 | 10,250 (0.147%) | `(1, 10)` ✓ |
 
 VGG11 tải ~14 phút (file 500MB, rớt mạng 1 lần ở 57.7% rồi chạy lại thành công). DenseNet121 tải < 30s.
 
@@ -98,6 +98,6 @@ VGG11 tải ~14 phút (file 500MB, rớt mạng 1 lần ở 57.7% rồi chạy l
 - `src/models/factory.py` — `ModelConfig`, `build_model`, `replace_head`, `freeze_backbone`, `unfreeze_last`, `count_parameters`, `describe_model`
 - `src/models/__init__.py` — export public API
 - `src/models/__main__.py` — CLI khám phá
-- `configs/model_config.yaml` — config mặc định (resnet18 + freeze)
-- `tests/unit/test_factory.py` — 17 test
+- `configs/model_config.yaml` — config mặc định (resnet18 + fine-tune)
+- `tests/unit/test_factory.py` — 18 test (gồm `test_finetune_all_models` bắt bug B4)
 - `tests/integration/test_model_pipeline.py` — 6 test

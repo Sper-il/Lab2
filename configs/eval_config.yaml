@@ -1,8 +1,8 @@
 # Cau hinh danh gia M4.
 evaluation:
-  checkpoint: results/runs/<timestamp>/checkpoints/best.pt
-  model: resnet18
-  strategy: freeze_backbone
+  checkpoint: results/runs/20261031-121323/vgg11-lr0.0001-bs32-0/checkpoints/best.pt
+  model: vgg11
+  strategy: fine_tune
   batch_size: 64
   num_workers: 4
   image_size: 64

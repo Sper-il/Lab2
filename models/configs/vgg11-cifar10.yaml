@@ -14,7 +14,8 @@ strategy:
   fine_tune:
     freeze_until: 1
     unfreezes: [features.16, features.18, classifier.6]
-input_size: [3, 224, 224]
-run_ref: results/runs/20261029-220833/vgg11-lr0.001-bs32-1/
-test_accuracy: 0.8331
-macro_f1: 0.8305
+    trainable_params_chot_20epoch: 2400778
+input_size: [3, 64, 64]
+run_ref: results/runs/20261031-121323/vgg11-lr0.0001-bs32-0/
+test_accuracy: 0.8774
+macro_f1: 0.8765

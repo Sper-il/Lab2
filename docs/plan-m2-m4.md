@@ -1,7 +1,7 @@
 # Kế hoạch chi tiết — M2 / M3 / M4
 
 > Nguồn: `đề.txt` (Practice 2), `progress_status.md` (Project Context, Decisions Log), `docs/data-flow.md` (M1).
-> Lập ngày 2026-10-25. Mọi số liệu thời gian trong tài liệu này **đã đo thật** trên máy này (CPU, 12 logical cores).
+> Lập ngày 2026-10-25; cập nhật ngày 2026-11-01: train chốt đã chuyển lên GPU Colab T4 (ảnh 64, AMP), ảnh 224 chỉ còn cho demo M1. Mọi số liệu thời gian CPU trong tài liệu này **đã đo thật** trên máy local (12 logical cores) trước khi chuyển lên GPU.
 
 ---
 
@@ -15,7 +15,9 @@
 
 **M2 là điểm mở khoá lớn nhất**: 6/14 yêu cầu đề nằm gọn trong một module, và M3/M4 đều phụ thuộc vào nó.
 
-### Rủi ro lớn nhất: thời gian train trên CPU
+### Rủi ro lớn nhất: thời gian train (đã chốt: GPU Colab T4, ảnh 64)
+
+> Bảng dưới là số đo cũ trên CPU local, giữ lại để giải thích vì sao chuyển lên GPU. **Thực tế chốt:** toàn bộ sweep 30 cấu hình 5 epoch + retrain 20 epoch chạy trên **GPU Colab T4 có AMP, ảnh 64×64** (~27–86 giây/epoch), đạt test 86–88% (`results/TEST_RESULTS.md`).
 
 Đã đo trên máy này (ResNet18, `batch=32`, `torch.set_num_threads(8)`):
 
@@ -33,9 +35,9 @@ Với 45.000 ảnh train, 5 epoch:
 | VGG11 freeze, 224 | ~144 min | **~12 giờ** | ⚠️ quá dài |
 | DenseNet121 freeze, 224 | ~124 min | **~10 giờ** | ⚠️ quá dài |
 
-**Quyết định thiết kế (xem §2.4):** dùng **2 tầng cấu hình** —
-- **Tier A (báo cáo chính)**: ảnh 224×224, đúng chuẩn ImageNet → kết quả "đẹp" nhất
-- **Tier B (sweep rộng)**: ảnh 64×64 → chạy được cả 3 model × nhiều tổ hợp siêu tham số
+**Quyết định thiết kế (xem §2.4):** dùng **1 cấu hình chốt duy nhất** —
+- **Train chốt (sweep + retrain 20 epoch, báo cáo chính)**: ảnh 64×64 → chạy được cả 3 model × 30 tổ hợp siêu tham số trên GPU Colab T4
+- **Demo M1**: ảnh 224×224, đúng chuẩn ImageNet (pipeline data demo, run `20261025-150847`)
 
 ---
 
@@ -136,7 +138,7 @@ model:
   name: resnet18
   num_classes: 10
   weights: DEFAULT          # hoặc IMAGENET1K_V1
-  strategy: freeze_backbone # freeze_backbone | fine_tune
+  strategy: fine_tune # freeze_backbone | fine_tune (chốt fine_tune)
   freeze_until: 1           # số block cuối mở khi fine_tune
   dropout: 0.0
 ```
@@ -274,19 +276,21 @@ Chức năng:
 ```yaml
 train:
   model: resnet18
-  strategy: freeze_backbone
+  strategy: fine_tune       # chốt fine_tune (freeze_backbone chỉ còn để tham khảo M2)
   freeze_until: 1
-  epochs: 5
+  freeze_head_full: false
+  epochs: 5                 # sweep 5 epoch; retrain chốt override --epochs 20
   batch_size: 32
   lr: 1.0e-3
   optimizer: adam
   weight_decay: 1.0e-4
   momentum: 0.9
   scheduler: none
-  num_workers: 4
+  num_workers: 2            # Colab T4 dùng workers = 2
   seed: 42
   device: auto
-  image_size: 224
+  image_size: 64            # chốt 64 cho sweep + retrain (224 chỉ còn demo M1)
+  use_amp: true             # AMP trên GPU Colab T4
   early_stopping_patience: 0     # 0 = tắt
 
 tensorboard:
@@ -309,20 +313,22 @@ tensorboard:
 | `model/grad_norms` | histogram | Độ lớn gradient |
 | `samples/train_images` | image | Ảnh mẫu sau transform |
 
-### 2.4 Chiến lược chạy (quan trọng vì CPU)
+### 2.4 Chiến lược chạy (thực tế chốt: GPU Colab T4, ảnh 64)
 
-**2 tầng cấu hình** để cân bằng giữa "kết quả đúng chuẩn" và "thời gian CPU":
+> Plan gốc viết khi chỉ có CPU local nên chia Tier A (224, báo cáo chính) / Tier B (64, sweep rộng). **Thực tế chốt:** toàn bộ sweep 30 cấu hình 5 epoch + retrain 3 cấu hình 20 epoch đều chạy trên **GPU Colab T4 có AMP với ảnh 64×64** (~27–86 giây/epoch), vì local CPU quá chậm (ResNet18 freeze 224 = 36.6 min/epoch; VGG11 224 = ~144 min/epoch). Ảnh 224×224 chỉ còn dùng cho pipeline demo M1 (`configs/data_config.yaml`, run `20261025-150847`).
 
-| Tier | `image_size` | Dùng khi | Thời gian ResNet18 freeze |
+| Cấu hình | `image_size` | Dùng khi | Thời gian đo thật |
 |------|--------------|----------|---------------------------|
-| **A — Báo cáo chính** | 224 | Kết quả cuối cùng trong báo cáo | ~3 giờ / 5 epoch |
-| **B — Sweep rộng** | 64 | So sánh model / siêu tham số | ~24 phút / 5 epoch |
+| **Train chốt (sweep + retrain)** | 64 | Toàn bộ kết quả báo cáo (`OTM_RESULTS.md`, `TEST_RESULTS.md`) | GPU T4 + AMP: R18/VGG ~27–35s/epoch, Dense ~48–86s/epoch |
+| **Demo M1** | 224 | Pipeline data demo, đúng chuẩn ImageNet | CPU local: R18 freeze ~37 min/epoch |
+
+Lưu ý: override `image_size: 64` trong `train_config.yaml` (giữ nguyên `data_config.yaml` = 224 cho M1). Không trộn 2 bảng số liệu.
 
 Lưu ý khi xuống 64×64: điều chỉnh `Resize` trong transform. **Không** đổi `image_size` trong `data_config.yaml` (giữ nguyên cho M1) — thêm override ở `train_config.yaml`.
 
-> ⚠️ **Khi dùng 64×64, kết quả accuracy sẽ thấp hơn 224×224.** Báo cáo phải nêu rõ điều này, không trộn hai bảng.
+> ⚠️ **Khi dùng 64×64, kết quả accuracy sẽ thấp hơn 224×224.** Báo cáo phải nêu rõ điều này, không trộn hai bảng. (Ghi chú lịch sử: câu này viết khi còn định chạy Tier A 224 trên CPU; **thực tế chốt** toàn bộ sweep + retrain đều chạy ảnh 64 trên GPU Colab T4 và đạt 86–88% test — xem `results/TEST_RESULTS.md` — nên Tier A 224 đã bỏ.)
 
-**Ước lượng tổng thời gian train (Tier A, 224×224, freeze, 5 epoch):**
+**Ước lượng cũ trên CPU local (Tier A, 224×224, freeze, 5 epoch) — chỉ giữ để tham khảo, không dùng cho kết quả chốt:**
 
 | Model | 1 epoch | 5 epoch | 2 chiến lược (freeze + FT) |
 |-------|---------|---------|---------------------------|
@@ -330,7 +336,7 @@ Lưu ý khi xuống 64×64: điều chỉnh `Resize` trong transform. **Không**
 | VGG11 | ~144 min | ~12 giờ | ⚠️ ~30 giờ — không khả thi |
 | DenseNet121 | ~124 min | ~10 giờ | ⚠️ ~25 giờ — không khả thi |
 
-**Khuyến nghị:** Tier A chỉ chạy **ResNet18** (freeze + fine-tune) để có kết quả "đẹp". VGG11 và DenseNet121 chạy ở **Tier B (64×64)** để so sánh kiến trúc — vẫn đáp ứng E1 "Experiment with different pre-trained models".
+**Khuyến nghị chốt (đã thực hiện):** bỏ Tier A 224 vì quá chậm trên CPU; toàn bộ sweep + retrain chạy ảnh **64×64** trên GPU Colab T4 — vẫn đáp ứng E1 "Experiment with different pre-trained models" và đạt 86–88% test (`results/TEST_RESULTS.md`).
 
 ### 2.5 Tests cho M3
 
@@ -432,11 +438,12 @@ Chức năng:
 
 ```yaml
 evaluation:
-  checkpoint: results/runs/20261025-150847/checkpoints/best.pt
-  model: resnet18
-  strategy: freeze_backbone
+  checkpoint: results/runs/20261031-121323/vgg11-lr0.0001-bs32-0/checkpoints/best.pt
+  model: vgg11
+  strategy: fine_tune         # chốt fine_tune (freeze_backbone chỉ còn để tham khảo M2)
   batch_size: 64
   num_workers: 4
+  image_size: 64              # khớp checkpoint train chốt ảnh 64
   device: auto
   save_plots: true
   top_k_errors: 12
@@ -535,9 +542,9 @@ M5 (Sweep + báo cáo)        chạy train + tổng hợp bảng so sánh
 
 ## 5. Rủi ro & kế hoạch ứng phó
 
-| Rủi ro | Khả năng | Tác động | Giảm thiểu |
-|--------|----------|----------|------------|
-| Train trên CPU quá lâu (> 12 giờ cho VGG11) | **Cao** | Trượt deadline | Tier A chỉ chạy ResNet18; VGG/DenseNet dùng Tier B (64×64). Ghi rõ điều kiện trong báo cáo |
+| Rủi ro | Khả năng | Tác động | Giảm thiểu (đã thực hiện) |
+|--------|----------|----------|---------------------------|
+| Train trên CPU quá lâu (> 12 giờ cho VGG11) | **Cao** | Trượt deadline | ✅ Đã chuyển toàn bộ lên GPU Colab T4 + AMP, ảnh 64×64 (~27–86 giây/epoch). Local chỉ chạy M1/demo/test |
 | Accuracy thấp hơn kỳ vọng | Trung bình | Không đạt tiêu chí tự đặt | Đo trước 1 epoch; nếu thấp thì so sánh với baseline đã biết (transfer learning CIFAR-10 ~85–90%) |
 | Fine-tune overfit (val giảm) | Trung bình | Kết quả kém | Early stopping theo val accuracy, lưu best checkpoint, weight decay |
 | `add_graph` rất chậm / lỗi với Sequential | Trung bình | Tắt mục 3 | `log_graph: false` mặc định; bật thủ công khi cần |
@@ -545,17 +552,15 @@ M5 (Sweep + báo cáo)        chạy train + tổng hợp bảng so sánh
 
 ---
 
-## 6. Ảnh hưởng tới docs hiện tại
+## 6. Ảnh hưởng tới docs hiện tại — ✅ đã xong (2026-11-01)
 
-Khi M2–M4 hoàn thành, cần cập nhật:
-
-| File | Nội dung cần sửa |
+| File | Nội dung đã sửa |
 |------|-----------------|
-| `README.md` | §2b (trạng thái E1–E3, O1–O11 → ✅), §4 (sơ đồ kiến trúc đầy đủ), §5 (cấu trúc thư mục), §6.6 (lệnh chạy thật), §8 (bảng kết quả thật), §9 (limitations cập nhật) |
-| `progress_status.md` | Module Log (M2/M3/M4 ✅ + commit), Decisions Log (quyết định mới), Project Context (tiêu chí đánh giá), DoD |
-| `AI_Usage.md` | Bảng artifact, Student Modifications, Validation Method |
-| `docs/data-flow.md` | §8 "Ranh giới module (cho M2–M5)" → cập nhật sang "đã cung cấp cho M2–M4" |
-| `docs/architecture.md` | **Tạo mới** — sơ đồ kiến trúc đầy đủ (README §4 đang trỏ tới file này) |
+| `README.md` | §2b (E1–E3, O1–O11 → ✅), §4 (sơ đồ đầy đủ M1–M4), §5 (cấu trúc thư mục), §6.6 (lệnh chạy thật + TensorBoard run `20261031-121323`), §8 (bảng test 20 epoch thật), §9 (ghi rõ GPU T4 + ảnh 64) |
+| `progress_status.md` | Module Log (M2/M3/M4/M5 ✅ + commit `2e98e31`), Decisions Log (GPU T4 + ảnh 64), Project Context, DoD (102 passed) |
+| `AI_Usage.md` | Bảng artifact (`colab_sweep.ipynb`, `colab_best3_retrain.ipynb`, 3 run `20261031-*`), Student Modifications, Validation Method |
+| `docs/data-flow.md` | §8 giữ nguyên — M1 cung cấp DataLoader cho M2–M4 (không đổi code `src/data/`) |
+| `docs/architecture.md` | Không tạo file riêng — dùng sơ đồ README §4 + `docs/data-flow.md` + `docs/plan-m2-m4.md` là đủ |
 
 ---
 

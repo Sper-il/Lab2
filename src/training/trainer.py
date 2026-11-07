@@ -52,7 +52,7 @@ class TrainConfig:
     num_workers: int = 4
     seed: int = 42
     device: str = "auto"
-    image_size: int = 224
+    image_size: int = 64
     use_amp: bool = True
     early_stopping_patience: int = 0
     log_images: bool = True
@@ -111,28 +111,39 @@ class Trainer:
         self._no_improve = 0
         self.stopped_early = False
 
-    # -- core loop ------------------------------------------------------
+    # -- Vòng train: 6 bước mỗi batch (khớp slide thuyết trình dòng 66) --
     def train_one_epoch(self, epoch: int) -> dict[str, float]:
+        # Vòng train: model học trên tập train, cập nhật trọng số sau mỗi batch.
         self.model.train()
         total_loss, correct, total = 0.0, 0, 0
         logged_images = False
         for images, labels in self.train_loader:
+            # Bước 1: đẩy data lên thiết bị (GPU/CPU).
             images = images.to(self.device, non_blocking=True)
             labels = labels.to(self.device, non_blocking=True).long().reshape(-1)
 
+            # Bước 2: xóa gradient cũ của optimizer (Adam).
             self.optimizer.zero_grad()  # 1
             if self.use_amp:
                 with torch.autocast(device_type="cuda", dtype=torch.float16):
+                    # Bước 3: chạy forward để ra logits.
                     outputs = self.model(images)  # 2 forward
+                    # Bước 4: tính loss CrossEntropy giữa dự đoán và nhãn thật.
                     loss = self.criterion(outputs, labels)  # 3 loss
                 assert self.scaler is not None
+                # Bước 5: chạy backward để tính gradient.
                 self.scaler.scale(loss).backward()  # 4 backward
+                # Bước 6: optimizer cập nhật trọng số.
                 self.scaler.step(self.optimizer)  # 5 step
                 self.scaler.update()
             else:
+                # Bước 3: chạy forward để ra logits.
                 outputs = self.model(images)  # 2 forward
+                # Bước 4: tính loss CrossEntropy giữa dự đoán và nhãn thật.
                 loss = self.criterion(outputs, labels)  # 3 loss
+                # Bước 5: chạy backward để tính gradient.
                 loss.backward()  # 4 backward
+                # Bước 6: optimizer cập nhật trọng số.
                 self.optimizer.step()  # 5 step
 
             batch = labels.size(0)
@@ -153,8 +164,11 @@ class Trainer:
 
         return {"loss": total_loss / max(1, total), "acc": correct / max(1, total)}
 
+    # -- Vòng validate: chỉ đo, không học (khớp slide thuyết trình dòng 68) --
     @torch.no_grad()
     def validate(self) -> dict[str, float]:
+        # Vòng validate: chạy trên tập val để đo loss/acc,
+        # từ đó giữ lại bản tốt nhất theo validation (best.pt).
         self.model.eval()
         total_loss, correct, total = 0.0, 0, 0
         for images, labels in self.val_loader:

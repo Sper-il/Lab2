@@ -15,7 +15,9 @@ env/
 
 # Data
 data/raw/
-data/processed/
+data/processed/*
+!data/processed/demo/
+!data/processed/demo/*
 data/splits/
 # (giữ lại data/README.md — tài liệu, không phải dataset)
 !data/README.md
@@ -36,10 +38,14 @@ models/trained/*
 # Dùng dấu / đầu + / cuối để KHÔNG khớp `results/runs/`.
 /runs/
 
-# Checkpoint nặng trong results (bỏ qua) — nhưng giữ lại metrics/config/plots
-results/runs/*/checkpoints/
+# Checkpoint nặng trong results (bỏ qua) — nhưng giữ lại metrics/config/plots/report.html
+results/runs/**/checkpoints/
 results/runs/*/*.pt
 results/runs/*/*.pth
+results/runs/**/*.pt
+results/runs/**/*.pth
+# TensorBoard event local-only (mỗi run ~1 MB, tái tạo bằng train lại) — giữ metrics.json/PNG/config/report.html
+results/runs/**/tb/
 
 # Logs
 *.log

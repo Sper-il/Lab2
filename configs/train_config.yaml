@@ -1,5 +1,5 @@
-# Cau hinh training M3 (Tier B mac dinh de chay nhanh tren CPU).
-# Tier A (bao cao chinh, 224): ghi de --image-size 224 khi chay that.
+# Cau hinh training M3 (mac dinh anh 64 chay nhanh tren GPU Colab T4 + AMP).
+# Muon chay pipeline demo M1 chuan ImageNet 224 thi ghi de --image-size 224 khi chay.
 train:
   model: resnet18
   strategy: fine_tune
