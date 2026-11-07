@@ -1,109 +1,114 @@
-# Model — chuẩn kiến trúc và version (M2)
+# Model — mô tả model cho project để làm
 
-> Tài liệu kiến trúc model của project, khởi tạo từ `modules/model.md` của skill `ai-fusion-workflow`.
-> Mọi con số đều đo thật từ code và checkpoint, không ước lượng.
-> Tài liệu liên quan: `docs/architecture.md` (tổng thể), `docs/api.md` (interfaces M2),
-> `docs/reports/m2_models_report.md` (báo cáo chi tiết), `docs/CHANGELOG.md` (version).
+> Đặc tả thi công module model (M2): cần làm model nào, thay head ra sao, freeze/fine-tune thế nào, viết ở file nào, nghiệm thu bằng gì.
+> Đọc trước khi code `src/models/`. Số liệu tham chiếu đã đo thật từ code và checkpoint, không ước lượng.
+> Tài liệu liên quan: `docs/architecture.md` (vị trí module model trong hệ thống), `docs/api.md` (interface chi tiết),
+> `docs/reports/m2_models_report.md` (kết quả đã làm xong), `docs/CHANGELOG.md` (version).
 
-## 1. Bài toán → họ model
+## 1. Mục đích của tài liệu này
 
-- **Bài toán:** phân loại ảnh (image classification) 10 lớp CIFAR-10.
-- **Họ kiến trúc:** CNN backbone pre-trained ImageNet + thay head tuyến tính — đúng yêu cầu Practice 2
-  (`torchvision.models`, transfer learning / fine-tuning, Chương 3 slide 20–21).
-- **Vì sao chọn họ này:** CIFAR-10 chỉ 50.000 ảnh 32×32 — train từ đầu dễ overfit;
-  giữ feature extractor ImageNet và chỉ học head/block cuối là cách chuẩn cho dataset nhỏ.
+- Nói rõ **cần làm gì** ở module model trước khi viết code: làm mấy backbone, mỗi backbone thay head thế nào, freeze ra sao.
+- Làm căn cứ để viết `src/models/registry.py`, `src/models/factory.py`, `src/models/__main__.py` và `configs/model_config.yaml`.
+- Làm căn cứ nghiệm thu: chạy lệnh nào, kiểm tra output nào, test nào phải pass.
 
-## 2. Baseline
+## 2. Bài toán và ràng buộc để làm model
 
-- **Baseline:** ResNet18 + `fine_tune` (`configs/model_config.yaml` mặc định).
-- **Lý do:** nhẹ (11,18M params), train nhanh nhất GPU T4 (~27–35 giây/epoch, ảnh 64, AMP),
-  đủ mạnh để đạt 86,26% test — làm mốc so sánh cho VGG11 và DenseNet121.
-- **Metric baseline (chốt 20 epoch):** ResNet18 val 0,8634 @ ep 17 → test **0,8626**, macro-F1 0,8626
-  (`results/runs/20261031-120033/resnet18-lr0.0001-bs32-0/`).
+- **Bài toán cần làm:** phân loại ảnh CIFAR-10, 10 lớp (`airplane`, `automobile`, `bird`, `cat`, `deer`, `dog`, `frog`, `horse`, `ship`, `truck`).
+- **Input model phải nhận:** batch ảnh `[B, 3, 64, 64]` (train/eval chốt trên GPU T4) hoặc `[B, 3, 224, 224]` (demo M1 chuẩn ImageNet), `float32`, đã normalize theo ImageNet mean/std.
+- **Output model phải trả:** logits `[B, 10]`, sau đó `argmax` ra nhãn và `softmax` lấy confidence.
+- **Ràng buộc khi làm:**
+  - Dùng backbone pre-trained ImageNet từ `torchvision.models` 0.29 (`weights="DEFAULT"`), không tự thiết kế CNN từ đầu.
+  - Dataset nhỏ (50.000 ảnh 32×32) nên phải làm transfer learning/fine-tuning, không train full từ đầu làm phương án chính.
+  - Mọi siêu tham số kiến trúc phải nằm trong `configs/model_config.yaml`, không hardcode trong code.
+  - Seed cố định 42 để tái tạo.
 
-## 3. Backbone + head
+## 3. Danh sách model cần làm
 
-| Backbone | Nguồn weights | Attr head | Dạng head | Head sau khi thay (10 lớp) |
-|----------|---------------|-----------|-----------|----------------------------|
-| `resnet18` | `torchvision` 0.29 `DEFAULT` (ImageNet) | `fc` | `Linear(512, 1000)` | `Linear(512, 10)` |
-| `vgg11` | `torchvision` 0.29 `DEFAULT` (ImageNet) | `classifier` | `Sequential[7]` | giữ 6 lớp đầu, thay lớp cuối `Linear(4096, 10)` |
-| `densenet121` | `torchvision` 0.29 `DEFAULT` (ImageNet) | `classifier` | `Linear(1024, 1000)` | `Linear(1024, 10)` |
+Cần làm đủ 3 backbone để so sánh theo yêu cầu E1 trong `đề.txt`:
 
-- **Input:** `[B, 3, 64, 64]` (train/eval chốt, GPU T4 + AMP) hoặc `[B, 3, 224, 224]` (demo M1 chuẩn ImageNet).
-- **Output:** logits `[B, 10]` → `argmax` ra nhãn + softmax probability.
-- **Chiến lược chốt:** `fine_tune` (`freeze_until: 1`, `freeze_head_full: false`, Adam) —
-  toàn bộ sweep 30 cấu hình + retrain 20 epoch đều fine-tune.
-- **Block cuối mở khi fine-tune** (`block_units` đã introspect trong `src/models/registry.py`):
-  ResNet `layer4`, VGG `features.16 + features.18`, DenseNet `denseblock4 + transition3/norm5`
-  (BatchNorm trong block được mở luôn để thích ứng phân bố CIFAR-10).
-- **Điểm đặc biệt VGG11:** `classifier` chứa 103M params — unfreeze cả sẽ khiến 92,8% model
-  trainable, mất ý nghĩa freeze. Mặc định `freeze_head_full: false` (chỉ `Linear` cuối 40.970 params),
-  có test `test_vgg_freeze_head_full_flag` bắt lỗi cấu hình sai.
+| STT | Model cần làm | Vai trò trong project | Kết quả tham chiếu sau khi làm xong |
+|-----|---------------|-----------------------|-------------------------------------|
+| 1 | `resnet18` | Baseline chính, nhẹ nhất, làm trước để có mốc so sánh | 11.181.642 params; test 0,8626 (`results/runs/20261031-120033/`) |
+| 2 | `vgg11` | Model so sánh, head dạng `Sequential` đặc biệt, cho accuracy cao nhất | 128.807.306 params; test 0,8774 ⭐ (`results/runs/20261031-121323/`) |
+| 3 | `densenet121` | Model so sánh, kiến trúc dense connection, nhẹ nhưng mạnh | 6.964.106 params; test 0,8715 (`results/runs/20261031-122534/`) |
 
-## 4. Loss function
+Thứ tự làm: `resnet18` trước, chạy thông rồi mới làm `vgg11` và `densenet121`.
 
-- **Chốt:** `CrossEntropyLoss` (`build_criterion("cross_entropy")` trong `src/training/loss.py`).
-- **Có sẵn để thử:** `label_smoothing` (`CrossEntropyLoss(label_smoothing=0.1)`), `focal` (`FocalLoss(gamma=2.0)`).
-- **Vì sao chốt CE:** CIFAR-10 cân bằng tuyệt đối (5.000 ảnh/lớp train) nên không cần class weight;
-  sweep + retrain toàn bộ dùng CE + Adam đã đạt 86–88% test, không cần focal.
-- **Optimizer chốt:** Adam (chỉ params `requires_grad=True`), lr 0,0001 (ResNet18/VGG11) / 0,0005 (DenseNet121).
+## 4. Đặc tả chi tiết từng model cần làm
 
-## 5. Số tham số / dung lượng
+### 4.1. ResNet18 cần làm
 
-Đo bằng `count_parameters()` sau `build_model()` (weights ImageNet thật):
+- **Backbone gốc cần nạp:** `torchvision.models.resnet18(weights="DEFAULT")`, head gốc `fc = Linear(512, 1000)`.
+- **Head cần thay:** `fc = Linear(512, 10)`, giữ nguyên toàn bộ phần còn lại (`conv1` → `bn1` → `layer1` → `layer2` → `layer3` → `layer4` → `avgpool`).
+- **Block cuối cần mở khi fine-tune:** `layer4` (theo `block_units` trong `src/models/registry.py`).
+- **Số params sau khi làm:** total 11.181.642; freeze chỉ train 5.130 (0,046%); fine-tune 1 block train 8.398.858 (75,1%).
 
-| Model | Total params | Trainable freeze | Trainable fine-tune chốt 20 epoch | Checkpoint local |
-|-------|-------------|------------------|-----------------------------------|------------------|
-| ResNet18 | 11.181.642 | 5.130 (0,046%) | 8.398.858 (75,1%) | `results/runs/20261031-120033/.../checkpoints/best.pt` (~45 MB) |
-| VGG11 ⭐ | 128.807.306 | 40.970 (0,032%) | 2.400.778 (1,86%) | `results/runs/20261031-121323/.../checkpoints/best.pt` (~515 MB) |
-| DenseNet121 | 6.964.106 | 10.250 (0,147%) | 2.696.714 (38,7%) | `results/runs/20261031-122534/.../checkpoints/best.pt` (~28 MB) |
+### 4.2. VGG11 cần làm
 
-- Dung lượng vượt giới hạn GitHub (100 MB) với VGG11 → `*.pt` LOCAL ONLY (`.gitignore` chặn),
-  chỉ push `models/trained/*.json` + `models/configs/*.yaml` + `metrics.json`/PNG/`report.html`.
-- Weight tái tạo được: `python -m src.training` với cùng seed 42.
-- Inference (test 10.000 ảnh): VGG11 ~0,33 ms/mẫu (GPU T4); demo CPU local ~50 ms/mẫu.
+- **Backbone gốc cần nạp:** `torchvision.models.vgg11(weights="DEFAULT")`, head gốc `classifier = Sequential[7]`, 8 Conv2d trong `features` (chỉ số `0, 3, 6, 8, 11, 13, 16, 18`).
+- **Head cần thay:** giữ nguyên 6 lớp đầu của `classifier`, chỉ thay lớp `Linear` cuối thành `Linear(4096, 10)`.
+- **Block cuối cần mở khi fine-tune:** `features.16` + `features.18` + `classifier.6`.
+- **Lưu ý bắt buộc khi làm:** `classifier` chứa tới 103M params. Khi freeze backbone, mặc định chỉ mở lớp `Linear` cuối (`freeze_head_full: false` → 40.970 params, 0,032%). Nếu mở cả `classifier` thì 92,8% model vẫn trainable, mất ý nghĩa transfer learning — phải có test bắt lỗi cấu hình này.
+- **Số params sau khi làm:** total 128.807.306; fine-tune 1 block train 2.400.778 (1,86%).
 
-## 6. Config hóa
+### 4.3. DenseNet121 cần làm
 
-- Mọi siêu tham số kiến trúc nằm trong `configs/model_config.yaml` (`name`, `num_classes`,
-  `weights`, `strategy`, `freeze_until`, `freeze_head_full`) — không hardcode trong code (phục vụ E2).
-- Model card từng version: `models/configs/{resnet18,vgg11,densenet121}-cifar10.yaml`
-  (`input_size: [3, 64, 64]`, `test_accuracy`, `macro_f1`, `run_ref` 20261031-*, `trainable_params_chot_20epoch`).
-- Kết quả cuối: `models/trained/{resnet18,vgg11,densenet121}-final.json` (VGG11 `best_model: true`, test 0,8774).
-- Thay đổi kiến trúc ghi vào `docs/CHANGELOG.md` (breaking change 2026-11-01: ảnh 224→64; 2026-10-25: `freeze_head_full`; 2026-10-30: fix B4).
+- **Backbone gốc cần nạp:** `torchvision.models.densenet121(weights="DEFAULT")`, head gốc `classifier = Linear(1024, 1000)`, 4 denseblock xen kẽ 3 transition, kết thúc bằng `norm5`.
+- **Head cần thay:** `classifier = Linear(1024, 10)`.
+- **Block cuối cần mở khi fine-tune:** `features.denseblock4` + `extra_trainable` là `features.transition3` và `features.norm5`.
+- **Lưu ý bắt buộc khi làm:** đường dẫn `features.denseblock4` là key chuỗi, không phải chỉ số — hàm lấy module phải ưu tiên `getattr` trước, fallback index sau, nếu không sẽ crash (lỗi B4 đã gặp).
+- **Số params sau khi làm:** total 6.964.106; freeze chỉ train 10.250 (0,147%); fine-tune 1 block train 2.696.714 (38,7%).
 
-## 7. Naming
+## 5. File và interface cần viết
 
-- Quy ước skill: `{domain}_{architecture}_{version}.{ext}` — áp dụng: `models/checkpoints/{resnet18,vgg11,densenet121}-best.pt`
-  (copy local từ 3 run `20261031-*`), run `results/runs/YYYYMMDD-HHMM/`.
-- Dataset: `cifar10_split_seed42.{npz,json}` (`{purpose}_{date}.{ext}`).
+| File cần viết | Nội dung cần làm |
+|---------------|------------------|
+| `src/models/registry.py` | Viết `BackboneSpec` (`builder`, `head_attr`, `head_type`, `block_units`, `extra_trainable`), `BACKBONE_REGISTRY` cho 3 model, hàm `resolve_spec(name)` và `get_module(model, path)` |
+| `src/models/factory.py` | Viết `ModelConfig` (validate `name`, `strategy`, `num_classes >= 2`, `freeze_until >= 1`), `resolve_weights`, `replace_head` (xử lý cả 2 dạng head linear/sequential), `freeze_backbone`, `unfreeze_last`, `count_parameters`, `describe_model`, `build_model` |
+| `src/models/__main__.py` | Viết CLI khám phá: nhận `--model/--strategy/--print-model`, in cấu trúc, đếm params, kiểm tra output `(1, 10)` bằng ảnh dummy `(1, 3, 224, 224)` rồi ghi `model_info.json` |
+| `configs/model_config.yaml` | Khai báo `name: resnet18`, `num_classes: 10`, `weights: DEFAULT`, `strategy: fine_tune`, `freeze_until: 1`, `freeze_head_full: false` |
+| `models/configs/*-cifar10.yaml` | Viết model card từng version sau khi làm xong (`input_size`, `test_accuracy`, `macro_f1`, `run_ref`, `trainable_params_chot_20epoch`) |
+| `models/trained/*-final.json` | Ghi kết quả cuối từng model (VGG11 đánh dấu `best_model: true`) |
 
-## 8. Checklist review (M2)
+## 6. Chiến lược freeze/fine-tune cần làm
 
-- [x] Có baseline đơn giản chạy trước (ResNet18 fine-tune 86,26% test) rồi mới so VGG11/DenseNet.
-- [x] Pretrained từ `torchvision.models` 0.29 (`weights="DEFAULT"` = ImageNet, giấy phép BSD cho nghiên cứu/học tập).
-- [x] Input/output khớp `Interfaces/APIs`: input `[B,3,64,64]`/`[B,3,224,224]` → output `(B,10)` (verify CLI cả 3 model).
-- [x] Loss xử lý imbalance: không cần weight (data cân bằng); có sẵn focal/label-smoothing nếu cần.
-- [x] Mọi số (`num_classes`, `freeze_until`, `freeze_head_full`, `dropout`) nằm trong config.
-- [x] Đã ước lượng params/VRAM/latency trước train dài (bảng §5 + `docs/plan-m2-m4.md` §2.4 đo thật CPU).
-- [x] Quyết định chọn/loại ghi Decisions Log (`docs/progress_status.md`: backbone 3 model, `freeze_head_full`, `block_units`, GPU T4 + ảnh 64).
+- **Chiến lược chốt cần làm:** `fine_tune` với `freeze_until: 1`, `freeze_head_full: false`, optimizer Adam.
+- **`freeze_backbone` cần làm:** tắt hết `requires_grad`, chỉ mở head (VGG11 mặc định chỉ lớp `Linear` cuối).
+- **`unfreeze_last(n_blocks)` cần làm:** tắt hết rồi mở head + n block cuối theo `block_units` + `extra_trainable` (DenseNet); mở luôn BatchNorm trong block để thích ứng phân bố CIFAR-10.
+- **`from_scratch` cần làm:** giữ nguyên toàn bộ trainable, dùng để đối chứng.
 
-## 9. Rủi ro và cách xử lý trong code
+## 7. Loss và optimizer đi kèm để train được model
 
-| Rủi ro | Xử lý trong project |
-|--------|---------------------|
-| Model quá lớn so với data nhỏ → overfit | Bắt đầu từ ResNet18 nhẹ; weight decay 1e-4 + best checkpoint theo val + augmentation crop/flip |
-| Quên `model.train()/eval()` + `torch.no_grad()` khi eval | `Trainer.train_one_epoch` set `train()`, `validate()` + `evaluate_model` dùng `@torch.no_grad()`/`inference_mode()` |
-| Mismatch kênh/số lớp data vs model | `replace_head` xử lý 2 dạng head + verify 1 batch thật → output `(1,10)` trước khi train; `ModelConfig` validate `num_classes >= 2` |
-| Không seed/version → không so sánh được | Seed 42 cố định split/shuffle/train; version qua `models/trained/*.json` + `CHANGELOG.md` + `run_ref` |
+- **Loss cần làm trong `src/training/loss.py`:** chốt `CrossEntropyLoss`; làm thêm `label_smoothing` và `FocalLoss(gamma=2.0)` để thử nghiệm. CIFAR-10 cân bằng nên chốt không dùng class weight.
+- **Optimizer chốt:** Adam, chỉ truyền params có `requires_grad=True`, lr 0,0001 (ResNet18/VGG11) / 0,0005 (DenseNet121), weight decay 1e-4.
 
-## 10. Tái tạo
+## 8. Tiêu chí nghiệm thu sau khi làm
+
+- [ ] Chạy `python -m src.models --model <resnet18|vgg11|densenet121> --print-model` đều ra output `(1, 10)`.
+- [ ] `count_parameters()` ra đúng bảng §4 (ResNet18 11.181.642 / VGG11 128.807.306 / DenseNet121 6.964.106).
+- [ ] Test pass: `tests/unit/test_factory.py` (18 test) + `tests/integration/test_model_pipeline.py` (6 test).
+- [ ] Train thử 20 epoch ảnh 64 trên GPU T4 đạt test: ResNet18 ≥ 0,86 / VGG11 ≥ 0,87 / DenseNet121 ≥ 0,87.
+- [ ] Mọi quyết định chọn/loại model ghi vào Decisions Log trong `docs/progress_status.md`.
+
+## 9. Thứ tự làm
+
+1. Viết `registry.py` cho `resnet18` trước, verify bằng introspect + chạy thử.
+2. Viết `factory.py` (`replace_head` → `freeze_backbone` → `unfreeze_last` → `build_model` → `count/describe`).
+3. Viết CLI `__main__.py`, chạy khám phá cả 3 model với weights ImageNet thật.
+4. Viết test factory + pipeline, chạy `pytest -q`.
+5. Thêm `vgg11` và `densenet121` vào registry, xử lý riêng head `Sequential` và `extra_trainable`.
+6. Chốt config `model_config.yaml`, ghi model card và `CHANGELOG.md`.
+
+## 10. Lệnh làm và kiểm tra
 
 ```powershell
-# Khám phá 1 backbone (in cấu trúc + đếm params + kiểm tra output)
+# Bước làm 1 — khám phá từng backbone sau khi viết registry/factory
 .\.venv\Scripts\python.exe -m src.models --model vgg11 --print-model
 .\.venv\Scripts\python.exe -m src.models --config configs/model_config.yaml --model resnet18
 
-# Train lại (ví dụ VGG11 cấu hình chốt)
+# Bước làm 2 — train thử cấu hình chốt sau khi model xong
 .\.venv\Scripts\python.exe -m src.training --config configs/train_config.yaml --models vgg11 --lr 0.0001 --batch-size 32 --epochs 20
+
+# Bước làm 3 — chạy test nghiệm thu
+.\.venv\Scripts\python.exe -m pytest tests/unit/test_factory.py tests/integration/test_model_pipeline.py -q
 ```
